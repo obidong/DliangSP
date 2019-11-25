@@ -4,7 +4,8 @@ import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.0
 import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
-import AlgWidgets 1.0
+import AlgWidgets 2.0
+import Qt.labs.folderlistmodel 1.0
 
 Button {
   id: root
@@ -15,6 +16,8 @@ Button {
   property var fbxPath:null
   property var exportPath:null
   property var texture_set_list:null
+  property string preset_folder:null
+
   style: ButtonStyle {
     background: Rectangle {
       width: control.width; height: control.height
@@ -44,6 +47,24 @@ Button {
       }
   }
 
+  FileDialog  {
+    id: export_preset_dialog
+    width: 300
+    height: 60
+    visible: false
+    selectFolder: true
+    onAccepted:{
+        preset_folder = export_preset_dialog.folder
+        alg.log.info(preset_folder)
+        var jsonData = JSON.stringify(preset_folder , null, '\t');
+        var jsonFile = alg.fileIO.open("C:/Users/obidong/Documents/Allegorithmic/Substance Painter/plugins/dliang-sp-toolkit/presets.json", 'w')
+        jsonFile.write(jsonData);
+        jsonFile.close()
+        export_preset_LM.folder = preset_folder
+    }
+  }
+
+
   AlgWindow{
     id: dliang_sp_tools
     title: "Dliang SP Tool Kit"
@@ -57,6 +78,8 @@ Button {
       | Qt.WindowSystemMenuHint
       | Qt.WindowMinMaxButtonsHint
       | Qt.WindowCloseButtonHint // close button
+
+    // functions
     function initParams(){
         return
       }
@@ -128,8 +151,6 @@ Button {
         }
       alg.log.info(selected_set)
       }
-    
-
     function selectCheckbox(state){
       var i=0
       for (i in texture_sets_SV.children){
@@ -141,8 +162,7 @@ Button {
     function selectVisible(){
       // No API found for this feature - -...
       return
-      }
-    
+      }  
     function setSize(){
       var i=0
       var texture_set = []
@@ -181,8 +201,11 @@ Button {
           alg.log.exception(err)
         }
     }
+    function setPresetPath(){
+        export_preset_dialog.visible = true
+    }
+
     //Layout
-    
     ColumnLayout{
       id: main_layout
       anchors.topMargin: 10
@@ -404,7 +427,7 @@ Button {
                   }
                 }
             //
-              GridLayout{
+            GridLayout{
                 id: export_tab_layout
                 anchors.topMargin: 10
                 Layout.fillHeight: false
@@ -463,12 +486,44 @@ Button {
                   text: "export maps"
                   Layout.fillWidth:true
                   Layout.columnSpan:2
-                  Layout.preferredHeight:40
+                  Layout.preferredHeight:30
                   onClicked:{
                     dliang_sp_tools.export_tex()
                     }
                   }
+
+                RowLayout{
+                    id: preset_column
+                    anchors.topMargin: 10
+                    Layout.fillHeight: false
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                    Layout.fillWidth: true
+                    Layout.columnSpan: 2
+
+                    AlgComboBox {
+                        id:export_presets_CB
+                        Layout.fillWidth:true
+                        Layout.preferredHeight:30
+                        FolderListModel{
+                            id:export_preset_LM
+                            folder:"./"
+                        }
+
+                        model:export_preset_LM
+                        textRole: 'fileName'
+                    }
+
+                    AlgButton {
+                        id: preset_folder_btn
+                        iconName:"icons/open_folder.png"
+                        anchors.right: parent.right
+                        onClicked: {
+                          dliang_sp_tools.setPresetPath()
+                        }
+                    }
+                }
               }
+            //
             //
             }
       }
