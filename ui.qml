@@ -1,6 +1,6 @@
 import QtQuick 2.3
 import QtQuick.Window 2.2
-import QtQuick.Layouts 1.2
+import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.0
 import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
@@ -14,6 +14,7 @@ Button {
   property bool loading: false
   property var fbxPath:null
   property var exportPath:null
+  property var texture_set_list:null
   style: ButtonStyle {
     background: Rectangle {
       width: control.width; height: control.height
@@ -37,7 +38,7 @@ Button {
           dliang_sp_tools.refreshInterface()
           dliang_sp_tools.raise()
           dliang_sp_tools.requestActivate()
-
+          texture_set_list = dliang_sp_tools.getTextureSetInfo()
       }catch(err){
           alg.log.exception(err)
       }
@@ -51,17 +52,14 @@ Button {
     height: 400
     minimumWidth: 300
     minimumHeight: 400
-
     flags: Qt.Window
       | Qt.WindowTitleHint
       | Qt.WindowSystemMenuHint
       | Qt.WindowMinMaxButtonsHint
       | Qt.WindowCloseButtonHint // close button
-
-
     function initParams(){
         return
-    }
+      }
     function refreshInterface() {
       try {
         if (!dliang_sp_tools.visible) {
@@ -70,8 +68,7 @@ Button {
       } catch(err) {
         alg.log.exception(err)
       }
-    }
-
+      }
     function getExt(ext){
       if(ext == "jpeg"){
         return "jpg"
@@ -92,9 +89,7 @@ Button {
       }else{
         return ext
       }
-    }
-
-
+      }
     function getParams(){
           return {
           out_path : p_output,
@@ -112,624 +107,370 @@ Button {
         normal : combo_normal.currentText == "Open GL" ? 1: 0
         }
       }
+    function getTextureSetInfo(){
+      var doc_info = alg.mapexport.documentStructure()
+      var i = 0
+      var texture_set_list = []
+      for (i in doc_info.materials){
+        texture_set_list.push(doc_info.materials[i].name)
+      }
+      texture_set_list.sort()
+      return texture_set_list
+      }  
+    function getSelectedSets(){
+      var selected_set=[]
+      var i=0
+      
+      for (i in texture_sets_SV.children){
+        if (texture_sets_SV.children[i].checked==true){
+            selected_set.push(texture_sets_SV.children[i].text)
+          }
+        }
+      alg.log.info(selected_set)
+      }
+    
 
+    function selectCheckbox(state){
+      var i=0
+      for (i in texture_sets_SV.children){
+        try{
+          texture_sets_SV.children[i].checkState=state
+          }catch(err){}
+        }
+      }
+    function selectVisible(){
+      // No API found for this feature - -...
+      return
+      }
+    
+    function setSize(){
+      var i=0
+      var texture_set = []
+      for (i in texture_sets_SV.children){
+        if (texture_sets_SV.children[i].checked==true){
+          texture_set.push(texture_sets_SV.children[i].text)
+          }
+        }
 
-ColumnLayout{
-    id: main_layout
-    anchors.topMargin: 10
-    anchors.horizontalCenter: parent.horizontalCenter
-    anchors.top: parent.top
-
-    GridLayout{
-      id: create_channel_layout
+      var size_int = parseInt(textureset_size_CB.currentText)
+      var log_size = (Math.log(size_int)/Math.log(2))
+      alg.texturesets.setResolution(texture_set,[log_size, log_size])  
+      }
+    function export_tex(){
+      alg.mapexport.exportDocumentMaps(
+        "PBR MetalRough",
+        "c:/tmp/export/pbr",
+        "tiff",
+       {resolution:[256,256]},
+       ["1005"])
+      }
+    function addChannel(){
+      try{
+        var current_textureset = alg.texturesets.getActiveTextureSet()[0]
+        var current_slot = channels_CB.currentText
+        var channel_info = channel_info_CB.currentText
+        var texture_label = channel_name_txt.text
+        var i=0
+        for (i in texture_sets_SV.children){
+          if (texture_sets_SV.children[i].checked==true){
+            alg.texturesets.addChannel(texture_sets_SV.children[i].text, current_slot,channel_info,texture_label)
+            }
+          }
+        }
+      catch(err){
+          alg.log.exception(err)
+        }
+    }
+    //Layout
+    
+    ColumnLayout{
+      id: main_layout
       anchors.topMargin: 10
-      columns: 2
-      columnSpacing: 10
+      anchors.rightMargin:5
+      anchors.leftMargin:5
+      anchors.bottomMargin:5
+      anchors.fill:parent
 
-      Rectangle{
-          Layout.fillWidth: true
-          Layout.columnSpan: 2
-              color: "#ffffff"
-              height: 1
+        AlgLabel {
+          id: texture_sets_label
+          Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+          text: "Textures Sets"
+            }
+
+        AlgScrollView{
+          id:texture_sets_SV
+            //width:200
+            //height:250
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            children:[
+              Repeater{
+                model:texture_set_list
+                AlgCheckBox{
+                  text:modelData
+                  hoverEnabled: false
+                  }
+                }
+              ]
           }
 
-      AlgLabel {
-        id: channel_name_label
-              text: " channel name:"
-      }
-      AlgTextInput{
-        id:channel_name_txt
-        Layout.fillWidth: true
-        text: ""
-      }
-      AlgLabel {
-        id: use_slot_label
-              text: " use slot:"
-      }
-      AlgComboBox {
-        id: channels_CB
-        Layout.fillWidth: true
-        model: ListModel {
-              id: channels_LE
-
-              ListElement { text: "ambientOcclusion" }
-              ListElement { text: "anisotropylevel" }
-              ListElement { text: "anisotropyangle" }
-              ListElement { text: "basecolor" }
-              ListElement { text: "blendingmask" }
-              ListElement { text: "diffuse" }
-              ListElement { text: "displacement" }
-              ListElement { text: "emissive" }
-              ListElement { text: "glossiness" }
-              ListElement { text: "height" }
-              ListElement { text: "ior" }
-              ListElement { text: "metallic" }
-              ListElement { text: "normal" }
-              ListElement { text: "opacity" }
-              ListElement { text: "reflection" }
-              ListElement { text: "roughness" }
-              ListElement { text: "scattering" }
-              ListElement { text: "specular" }
-              ListElement { text: "specularlevel" }
-              ListElement { text: "transmissive" }
-              ListElement { text: "user0" }
-              ListElement { text: "user1" }
-              ListElement { text: "user2" }
-              ListElement { text: "user3" }
-              ListElement { text: "user4" }
-              ListElement { text: "user5" }
-              ListElement { text: "user6" }
-              ListElement { text: "user7" }
-
-
-        }
-      }
-      AlgLabel {
-        id: channel_info_label
-              text: " channel info:"
-      }
-      AlgComboBox {
-        id: channel_info_CB
-        Layout.fillWidth: true
-        model: ListModel {
-              id: channel_info_LE
-
-              ListElement { text: "sRGB8" }
-              ListElement { text: "L8" }
-              ListElement { text: "RGB8" }
-              ListElement { text: "L16" }
-              ListElement { text: "RGB16" }
-              ListElement { text: "L16F" }
-              ListElement { text: "RGB16F" }
-              ListElement { text: "L32F" }
-              ListElement { text: "RGB32F" }
-        }
-      }
-      AlgButton{
-          id: create_channel_button
-          Layout.fillWidth: true
-          Layout.columnSpan: 2
-        text: "Create Channel"
-        Layout.preferredHeight: 30
+        AlgButton{
+          id: select_all_btn
+          text: "select all"
+          Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+          Layout.preferredHeight:25
+          Layout.fillWidth:true
           onClicked:{
-              try{
-                var current_textureset = alg.texturesets.getActiveTextureSet()[0]
-                var current_slot = channels_CB.currentText
-                var channel_info = channel_info_CB.currentText
-                var texture_label = channel_name_txt.text
-                alg.texturesets.addChannel(current_textureset, current_slot,channel_info,texture_label)
-
-              }catch(err){
-                  alg.log.exception(err)
+            dliang_sp_tools.selectCheckbox(1)
               }
-          }
-      }
-    }
-
-
-    GridLayout{
-      id: set_channel_layout
-      columns: 2
-          columnSpacing: 10
-          //anchors.horizontalCenter: parent.horizontalCenter
-          //anchors.top: parent.top
-          //anchors.topMargin: 50
-
-      //------ UDIMS ------
-      AlgLabel {
-        id: lbl_udims
-              text: "UDIMs:"
-              visible: combo_software.currentText != "Blender" && combo_software.currentText != "Cinema 4D" ? 1:0
-      }
-      AlgCheckBox {
-        id: check_udims
-        checked: false
-              visible: combo_software.currentText != "Blender" && combo_software.currentText != "Cinema 4D"? 1:0
-              onCheckedChanged:{
-                  if(alg.project.isOpen()){
-                      alg.project.settings.setValue("hh_udims", check_udims.checked)
-                  }
-              }
-      }
-
-
-
-      //------ TARGET SOFTWARE ------
-        AlgLabel {
-          id: lbl_software
-              text: "Software:"
-        }
-        AlgComboBox {
-          id: combo_software
-              model: ListModel {
-                      id: modelSW
-                      ListElement { text: "Blender" }
-            ListElement { text: "Cinema 4D" }
-                      ListElement { text: "Houdini" }
-                      ListElement { text: "Maya" }
-                      ListElement { text: "Modo" }
-                      ListElement { text: "3DS Max" }
-              }
-              onCurrentTextChanged:{
-                  if(alg.project.isOpen()){
-                      alg.project.settings.setValue("hh_software",  combo_software.currentText)
-                  }
-              }
-        }
-
-
-    //------ Houdini Path -----test
-    AlgLabel {
-      id:lbl_houpath
-      text: "Houdini Path:"
-      visible: combo_software.currentText == "Houdini"? 1:0
-    }
-    AlgTextInput{
-      id:txt_houpath
-      text: "shop/"
-      Layout.preferredWidth: 125
-      visible: combo_software.currentText == "Houdini"? 1:0
-      onTextChanged:{
-        if(alg.project.isOpen()){
-          alg.project.settings.setValue("hh_houpath",  txt_houpath.text)
-        }
-      }
-    }
-
-
-      //------ CONNECTION PORT ------
-        AlgLabel {
-          id: lbl_port
-              text: "Port:"
-              visible: combo_software.currentText != "Blender" && combo_software.currentText != "Cinema 4D"? 1:0
-        }
-          AlgTextInput{
-              id:txt_port
-              text: combo_software.currentText == "Houdini"?"18811":"8080"
-              Layout.preferredWidth: 125
-              visible: combo_software.currentText != "Blender" && combo_software.currentText != "Cinema 4D"? 1:0
-              onTextChanged:{
-                  if(alg.project.isOpen()){
-                      alg.project.settings.setValue("hh_port",  txt_port.text)
-                  }
-              }
-          }
-
-
-      //------ RENDERER TARGET ------
-        AlgLabel {
-          id: lbl_renderer
-              text: "Renderer:"
-        }
-        AlgComboBox {
-          id: combo_renderer
-        property var c4d_rndr: ListModel {
-            id: mod_render_c4d
-            ListElement { text: "ARNOLD" }
-            ListElement { text: "REDSHIFT" }
-        }
-              property var modo_rndr: ListModel {
-                      id: mod_render_modo
-                      ListElement { text: "MODO" }
-                      ListElement { text: "UE4" }
-                      ListElement { text: "UNITY" }
-              }
-              property var maya_rndr: ListModel {
-                      id: mod_render_maya
-                      ListElement { text: "ARNOLD" }
-                      ListElement { text: "REDSHIFT" }
-            ListElement { text: "RENDERMAN" }
-                      ListElement { text: "VRAY" }
-              }
-              property var blender_rndr: ListModel {
-                      id: mod_render_blender
-                      ListElement { text: "2.79" }
-                      ListElement { text: "2.80" }
-              }
-              property var max_rndr: ListModel {
-                      id: mod_render_max
-            ListElement { text: "ARNOLD" }
-                      ListElement { text: "CORONA" }
-                      ListElement { text: "REDSHIFT" }
-            ListElement { text: "VRAY" }
-              }
-              property var houdini_rndr: ListModel {
-                      id: mod_render_houdini
-            ListElement { text: "ARNOLD" }
-                      ListElement { text: "REDSHIFT" }
-            ListElement { text: "RENDERMAN" }
-              }
-              model: combo_software.currentText == "Cinema 4D" ? mod_render_c4d:combo_software.currentText == "Modo" ? mod_render_modo: combo_software.currentText == "Maya" ? mod_render_maya : combo_software.currentText == "3DS Max" ? mod_render_max : combo_software.currentText == "Houdini" ? mod_render_houdini : mod_render_blender
-              onCurrentTextChanged:{
-                  if(alg.project.isOpen()){
-                      alg.project.settings.setValue("hh_renderer",  combo_renderer.currentText)
-                  }
-              }
-        }
-
-      Rectangle{
-        Layout.fillWidth: true
-              Layout.columnSpan: 2
-        color: "#ffffff"
-        height: 1
-      }
-
-
-      //------ RESOLUTION ------
-        AlgLabel {
-          id: lbl_resolution
-              text: "Resolution:"
-        }
-        AlgComboBox {
-          id: combo_resolution
-              model: ListModel {
-                          id: mod_resolution
-                          ListElement { text: "128" }
-                          ListElement { text: "256" }
-                          ListElement { text: "512" }
-                          ListElement { text: "1024" }
-                          ListElement { text: "2048" }
-                          ListElement { text: "4096" }
-                          ListElement { text: "8192" }
-              }
-              onCurrentTextChanged:{
-                  if(alg.project.isOpen()){
-                      alg.project.settings.setValue("hh_resolution",  combo_resolution.currentText)
-                  }
-              }
-        }
-
-      //------ FORMAT ------
-      AlgLabel {
-        id: lbl_format
-        text: "Format:"
-      }
-      AlgComboBox {
-        id: combo_format
-        model: ListModel {
-              id: mod_format
-              ListElement { text: "bmp" } //bmp
-              ListElement { text: "ico" } //ico
-              ListElement { text: "jpeg" } //jpg
-              ListElement { text: "jng" } //jng
-              ListElement { text: "pbm" } //pbm
-              ListElement { text: "pbmraw" } //pbm
-              ListElement { text: "pgm" } //pgm
-              ListElement { text: "pgmraw" } //pgm
-              ListElement { text: "png" } //png
-              ListElement { text: "ppm" } //ppm
-              ListElement { text: "ppmraw" } //ppm
-              ListElement { text: "targa" } //tga
-              ListElement { text: "tiff" } //tif
-              ListElement { text: "wbmp" } //wap
-              ListElement { text: "xpm" } //xpm
-              ListElement { text: "gif" } //gif
-              ListElement { text: "hdr" } //hdr
-              ListElement { text: "exr" } //exr
-              ListElement { text: "j2k" } //j2k
-              ListElement { text: "jp2" } //jp2
-              ListElement { text: "pfm" } //pfm
-              ListElement { text: "webp" } //webp
-              ListElement { text: "jpeg-xr" } //jxr
-              ListElement { text: "psd" } //psd
-        }
-        onCurrentTextChanged:{
-          if(alg.project.isOpen()){
-            alg.project.settings.setValue("hh_format",   combo_format.currentText)
-          }
-        }
-      }
-
-
-      //------ NORMAL FORMAT ------
-      AlgLabel {
-        id:lbl_normal
-        text: "Normal Format:"
-      }
-      AlgComboBox {
-        id:combo_normal
-        model: ListModel {
-            id: modelNormal
-            ListElement { text: "Open GL" }
-            ListElement { text: "Direct X" }
-        }
-        onCurrentTextChanged:{
-          if(alg.project.isOpen()){
-            alg.project.settings.setValue("hh_normal",  combo_normal.currentText)
-          }
-        }
-      }
-
-      //------ PACKED ------
-      AlgLabel {
-        id: lbl_packed
-        text: "Packed Textures:"
-      }
-      AlgCheckBox {
-        id: check_packed
-        checked: true
-        onCheckedChanged:{
-          if(alg.project.isOpen()){
-            alg.project.settings.setValue("hh_packed",  check_packed.checked)
-          }
-        }
-      }
-
-      Rectangle{
-        Layout.fillWidth: true
-              Layout.columnSpan: 2
-        color: "#ffffff"
-        height: 1
-      }
-
-
-      //------ MAIN BITDEPTH ------
-      AlgLabel {
-        id:lbl_main_bitdepth
-        text: "Main Bitdepth:"
-      }
-      AlgComboBox {
-        id: combo_main_bitdepth
-
-        property var main_8_depth: ListModel {
-            id: mod_main_8_depth
-            ListElement { text: "8" }
-        }
-        property var main_8_16_depth: ListModel {
-            id: mod_main_8_16_depth
-            ListElement { text: "8" }
-            ListElement { text: "16" }
-        }
-        property var main_8_16_32_depth: ListModel {
-            id: mod_main_8_16_32_depth
-            ListElement { text: "8" }
-            ListElement { text: "16" }
-            ListElement { text: "32" }
-        }
-
-        property var main_32_depth: ListModel {
-            id: mod_main_32_depth
-            ListElement { text: "32" }
-        }
-
-        model:
-          combo_format.currentText == "bmp" ||
-          combo_format.currentText == "ico" ||
-          combo_format.currentText == "jpeg" ||
-          combo_format.currentText == "jng" ||
-          combo_format.currentText == "targa" ||
-          combo_format.currentText == "wbmp" ||
-          combo_format.currentText == "xpm" ||
-          combo_format.currentText == "gif" ||
-          combo_format.currentText == "webp" ? main_8_depth
-
-          :combo_format.currentText == "pbm" ||
-          combo_format.currentText == "pbmraw" ||
-          combo_format.currentText == "pgm" ||
-          combo_format.currentText == "pgmraw" ||
-          combo_format.currentText == "png" ||
-          combo_format.currentText == "ppm" ||
-          combo_format.currentText == "ppmraw" ||
-          combo_format.currentText == "j2k" ||
-          combo_format.currentText == "jp2" ||
-          combo_format.currentText == "psd" ? main_8_16_depth
-
-          :combo_format.currentText == "tiff" ||
-          combo_format.currentText == "jpeg-xr"? main_8_16_32_depth
-
-          :combo_format.currentText == "hdr" ||
-          combo_format.currentText == "exr" ||
-          combo_format.currentText == "pfm"? main_32_depth
-          :main_8_depth
-        onCurrentTextChanged:{
-          if(alg.project.isOpen()){
-            alg.project.settings.setValue("hh_main_bitdepth",   combo_main_bitdepth.currentText)
-          }
-        }
-      }
-
-
-      //------ NORMAL BITDEPTH ------
-      AlgLabel {
-        id:lbl_normal_bitdepth
-        text: "Normal Bitdepth:"
-      }
-      AlgComboBox {
-        id: combo_normal_bitdepth
-
-        property var normal_8_depth: ListModel {
-            id: mod_normal_8_depth
-            ListElement { text: "8" }
-        }
-        property var normal_8_16_depth: ListModel {
-            id: mod_normal_8_16_depth
-            ListElement { text: "8" }
-            ListElement { text: "16" }
-        }
-        property var normal_8_16_32_depth: ListModel {
-            id: mod_normal_8_16_32_depth
-            ListElement { text: "8" }
-            ListElement { text: "16" }
-            ListElement { text: "32" }
-        }
-
-        property var normal_32_depth: ListModel {
-            id: mod_normal_32_depth
-            ListElement { text: "32" }
-        }
-
-        model:
-          combo_format.currentText == "bmp" ||
-          combo_format.currentText == "ico" ||
-          combo_format.currentText == "jpeg" ||
-          combo_format.currentText == "jng" ||
-          combo_format.currentText == "targa" ||
-          combo_format.currentText == "wbmp" ||
-          combo_format.currentText == "xpm" ||
-          combo_format.currentText == "gif" ||
-          combo_format.currentText == "webp" ? normal_8_depth
-
-          :combo_format.currentText == "pbm" ||
-          combo_format.currentText == "pbmraw" ||
-          combo_format.currentText == "pgm" ||
-          combo_format.currentText == "pgmraw" ||
-          combo_format.currentText == "png" ||
-          combo_format.currentText == "ppm" ||
-          combo_format.currentText == "ppmraw" ||
-          combo_format.currentText == "j2k" ||
-          combo_format.currentText == "jp2" ||
-          combo_format.currentText == "psd" ? normal_8_16_depth
-
-          :combo_format.currentText == "tiff" ||
-          combo_format.currentText == "jpeg-xr"? normal_8_16_32_depth
-
-          :combo_format.currentText == "hdr" ||
-          combo_format.currentText == "exr" ||
-          combo_format.currentText == "pfm"? normal_32_depth
-          :normal_8_depth
-        onCurrentTextChanged:{
-          if(alg.project.isOpen()){
-            alg.project.settings.setValue("hh_normal_bitdepth",   combo_normal_bitdepth.currentText)
-          }
-        }
-      }
-
-
-
-      //------ HEIGHT BITDEPTH ------
-      AlgLabel {
-        id:lbl_height_bitdepth
-        text: "Height Bitdepth:"
-      }
-      AlgComboBox {
-        id: combo_height_bitdepth
-
-        property var height_8_depth: ListModel {
-            id: mod_height_8_depth
-            ListElement { text: "8" }
-        }
-        property var height_8_16_depth: ListModel {
-            id: mod_height_8_16_depth
-            ListElement { text: "8" }
-            ListElement { text: "16" }
-        }
-        property var height_8_16_32_depth: ListModel {
-            id: mod_height_8_16_32_depth
-            ListElement { text: "8" }
-            ListElement { text: "16" }
-            ListElement { text: "32" }
-        }
-
-        property var height_32_depth: ListModel {
-            id: mod_height_32_depth
-            ListElement { text: "32" }
-        }
-
-        model:
-          combo_format.currentText == "bmp" ||
-          combo_format.currentText == "ico" ||
-          combo_format.currentText == "jpeg" ||
-          combo_format.currentText == "jng" ||
-          combo_format.currentText == "targa" ||
-          combo_format.currentText == "wbmp" ||
-          combo_format.currentText == "xpm" ||
-          combo_format.currentText == "gif" ||
-          combo_format.currentText == "webp" ? height_8_depth
-
-          :combo_format.currentText == "pbm" ||
-          combo_format.currentText == "pbmraw" ||
-          combo_format.currentText == "pgm" ||
-          combo_format.currentText == "pgmraw" ||
-          combo_format.currentText == "png" ||
-          combo_format.currentText == "ppm" ||
-          combo_format.currentText == "ppmraw" ||
-          combo_format.currentText == "j2k" ||
-          combo_format.currentText == "jp2" ||
-          combo_format.currentText == "psd" ? height_8_16_depth
-
-          :combo_format.currentText == "tiff" ||
-          combo_format.currentText == "jpeg-xr"? height_8_16_32_depth
-
-          :combo_format.currentText == "hdr" ||
-          combo_format.currentText == "exr" ||
-          combo_format.currentText == "pfm"? height_32_depth
-          :height_8_depth
-        onCurrentTextChanged:{
-          if(alg.project.isOpen()){
-            alg.project.settings.setValue("hh_height_bitdepth",   combo_height_bitdepth.currentText)
-          }
-        }
-      }
-
-      //------ ACTION BUTTONS ------
-      Rectangle{
-        Layout.fillWidth: true
-          Layout.columnSpan: 2
-        color: "#ffffff"
-        height: 1
-      }
-
-      AlgButton{
-          id: btnSendAll
-        text: "Send All"
-
+            }
+        AlgButton{
+          id: hide_all_btn
+          text: "deselect all"
+          Layout.preferredHeight:25
+          Layout.fillWidth:true
+          Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
           onClicked:{
-              try{
-            initParams()
-            Utils.sendData(getParams(),false)
-              }catch(err){
-                  alg.log.exception(err)
+            dliang_sp_tools.selectCheckbox(0)
               }
           }
-      }
-
-      AlgButton{
-          id: btnSendCurrent
-        text: "Send Current"
-
+        /*
+        AlgButton{
+          id: select_visible_btn
+          text: "select visible"
+          Layout.preferredHeight:25
+          Layout.fillWidth:true
           onClicked:{
-              try{
-            initParams()
-            Utils.sendData(getParams(),true)
-              }catch(err){
-                  alg.log.exception(err)
+            dliang_sp_tools.selectVisible()
               }
+            }      
+        */
+        AlgTabBar {
+            id: features_tab
+            anchors.topMargin: 10
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+            Layout.fillWidth: true
+
+            AlgTabButton {
+                width:children.width
+                id: create_tab_btn
+                text: "Create"
+                activeCloseButton:null
+              }
+            AlgTabButton {
+                id: modify_tab_btn
+                text: "Modify"
+                width:children.width
+                activeCloseButton:null
+              }
+            AlgTabButton {
+                id: export_tab_btn
+                text: "Export"
+                width:children.width
+                activeCloseButton:null
+              }
+            
           }
-      }
+          StackLayout{
+            anchors.topMargin: 10
+            Layout.fillHeight: false
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+            Layout.fillWidth: true
+            width:parent.width;
+            currentIndex:features_tab.currentIndex;
+            // create channel tab
+            GridLayout{
+                id: create_channel_layout
+                anchors.topMargin: 10
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                Layout.fillWidth: true
+                columns: 2
+                columnSpacing: 10
+                AlgLabel {
+                  id: channel_name_label
+                        text: " channel name:"
+                  }
+                AlgTextInput{
+                  id:channel_name_txt
+                  Layout.fillWidth: true
+                  text: ""
+                  }
+                AlgLabel {
+                  id: use_slot_label
+                        text: " use slot:"
+                  }
+                AlgComboBox {
+                  id: channels_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: channels_LE
+                        ListElement { text: "ambientOcclusion" }
+                        ListElement { text: "anisotropylevel" }
+                        ListElement { text: "anisotropyangle" }
+                        ListElement { text: "basecolor" }
+                        ListElement { text: "blendingmask" }
+                        ListElement { text: "diffuse" }
+                        ListElement { text: "displacement" }
+                        ListElement { text: "emissive" }
+                        ListElement { text: "glossiness" }
+                        ListElement { text: "height" }
+                        ListElement { text: "ior" }
+                        ListElement { text: "metallic" }
+                        ListElement { text: "normal" }
+                        ListElement { text: "opacity" }
+                        ListElement { text: "reflection" }
+                        ListElement { text: "roughness" }
+                        ListElement { text: "scattering" }
+                        ListElement { text: "specular" }
+                        ListElement { text: "specularlevel" }
+                        ListElement { text: "transmissive" }
+                        ListElement { text: "user0" }
+                        ListElement { text: "user1" }
+                        ListElement { text: "user2" }
+                        ListElement { text: "user3" }
+                        ListElement { text: "user4" }
+                        ListElement { text: "user5" }
+                        ListElement { text: "user6" }
+                        ListElement { text: "user7" }
+                    }
+                  }
+                AlgLabel {
+                  id: channel_info_label
+                        text: " channel info:"
+                  }
+                AlgComboBox {
+                  id: channel_info_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: channel_info_LE
 
-    }
-}
+                        ListElement { text: "sRGB8" }
+                        ListElement { text: "L8" }
+                        ListElement { text: "RGB8" }
+                        ListElement { text: "L16" }
+                        ListElement { text: "RGB16" }
+                        ListElement { text: "L16F" }
+                        ListElement { text: "RGB16F" }
+                        ListElement { text: "L32F" }
+                        ListElement { text: "RGB32F" }
+                    }
+                    }
+                AlgButton{
+                    id: create_channel_button
+                    Layout.fillWidth: true
+                    Layout.columnSpan: 2
+                  text: "Create Channel"
+                  Layout.preferredHeight: 30
+                    onClicked:{
+                        dliang_sp_tools.addChannel()
+                      }
+                  }
+                }
+          
+            // modify texture set tab
+            GridLayout{
+                id: modify_channel_layout
+                anchors.topMargin: 10
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                Layout.fillWidth: true
+                columns: 2
+                columnSpacing: 10
 
-    FileDialog {
-              id: file_path
-              title: "Please select the export location..."
-              selectFolder:true
-              onAccepted: {
-                  lbl_path.text = alg.fileIO.urlToLocalFile(fileUrl.toString())
-                  alg.project.settings.setValue("hh_output_path", alg.fileIO.urlToLocalFile(fileUrl.toString()));
+                AlgLabel{text: "texture size: "}
+                AlgComboBox {
+                  id: textureset_size_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: texture_set_size_LM
+                        ListElement { text: "256" }
+                        ListElement { text: "512" }
+                        ListElement { text: "1024" }
+                        ListElement { text: "2048" }
+                        ListElement { text: "4096" }
+                    }
+                  }
+                AlgButton{
+                    id: modify_texutre_size_btn
+                    Layout.fillWidth: true
+                    Layout.columnSpan: 2
+                  text: "Adjust Texture Sets"
+                  Layout.preferredHeight: 30
+                    onClicked:{
+                      dliang_sp_tools.setSize()
+                      }
+                  }
+                }
+            //
+              GridLayout{
+                id: export_tab_layout
+                anchors.topMargin: 10
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                Layout.fillWidth: true
+                columns: 2
+                columnSpacing: 10
+
+                AlgLabel{text:"Export Size"}
+                
+                AlgComboBox {
+                  id: export_size_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: export_size_LE
+                        ListElement { text: "use default" }
+                        ListElement { text: "128" }
+                        ListElement { text: "256" }
+                        ListElement { text: "512" }
+                        ListElement { text: "1024" }
+                        ListElement { text: "2048" }
+                        ListElement { text: "4096" }
+                        ListElement { text: "8192" }
+                        ListElement { text: "16K" }
+                    }
+                  }
+                
+                AlgComboBox {
+                  id: export_format_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: export_format_LE
+                        ListElement { text: "tiff" }
+                        ListElement { text: "png" }
+                        ListElement { text: "jpeg" }
+                        ListElement { text: "exr" }
+                        ListElement { text: "bmp" }
+                        ListElement { text: "tga" }
+                        ListElement { text: "psd" }
+                        ListElement { text: "hdr" }
+                        ListElement { text: "gif" }
+                    }
+                  }
+                AlgComboBox {
+                  id: bit_depth_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: bit_depth_LE
+                        ListElement { text: "8 bit" }
+                        ListElement { text: "16 bit" }
+                    }
+                  }
+                
+                AlgButton{
+                  id:export_btn
+                  text: "export maps"
+                  Layout.fillWidth:true
+                  Layout.columnSpan:2
+                  Layout.preferredHeight:40
+                  onClicked:{
+                    dliang_sp_tools.export_tex()
+                    }
+                  }
               }
+            //
+            }
       }
-
-  }
-
-}
+    } //end of main layout
+  } // end of button
