@@ -15,5 +15,10 @@ function get_spexp(pathName){
             sp_presets.push(name);}
     }  
     return sp_presets; 
-
 }  
+
+
+function send_to_maya(){
+    var cmd = "C:/Users/obi/Desktop/test.py";
+    Runtime.getRuntime().exec("python "+cmd);
+}

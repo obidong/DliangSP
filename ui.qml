@@ -6,6 +6,7 @@ import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 import AlgWidgets 2.0
 import Qt.labs.folderlistmodel 1.0
+import "utils.js" as Utils
 
 Button {
   id: root
@@ -16,7 +17,9 @@ Button {
   property var fbxPath:null
   property var exportPath:null
   property var texture_set_list:null
-  property string preset_folder:null
+  property string preset_folder:alg.fileIO.open((alg.plugin_root_directory+"presets.json"), 'r').readAll()
+  property var outputpath: null
+
 
   style: ButtonStyle {
     background: Rectangle {
@@ -34,6 +37,9 @@ Button {
 
   onClicked: {
       try{
+
+          alg.log.info(preset_folder)
+
           if(alg.project.isOpen()){
               dliang_sp_tools.initParams()
           }
@@ -55,15 +61,13 @@ Button {
     selectFolder: true
     onAccepted:{
         preset_folder = export_preset_dialog.folder
-        alg.log.info(preset_folder)
-        var jsonData = JSON.stringify(preset_folder , null, '\t');
-        var jsonFile = alg.fileIO.open("C:/Users/obidong/Documents/Allegorithmic/Substance Painter/plugins/dliang-sp-toolkit/presets.json", 'w')
-        jsonFile.write(jsonData);
-        jsonFile.close()
         export_preset_LM.folder = preset_folder
+        var preset_json_path = alg.plugin_root_directory+"presets.json"
+        var json_file = alg.fileIO.open(preset_json_path, 'w')
+        json_file.write(preset_folder)
+        json_file.close()
     }
   }
-
 
   AlgWindow{
     id: dliang_sp_tools
@@ -79,7 +83,7 @@ Button {
       | Qt.WindowMinMaxButtonsHint
       | Qt.WindowCloseButtonHint // close button
 
-    // functions
+    // delete later
     function initParams(){
         return
       }
@@ -130,6 +134,11 @@ Button {
         normal : combo_normal.currentText == "Open GL" ? 1: 0
         }
       }
+    function test(){
+        Utils.send_to_maya()
+        }
+
+    // functions
     function getTextureSetInfo(){
       var doc_info = alg.mapexport.documentStructure()
       var i = 0
@@ -139,11 +148,21 @@ Button {
       }
       texture_set_list.sort()
       return texture_set_list
-      }  
+      }
+    function getPresetFolder(){
+        var json_file
+        try{
+            var preset_file_path = alg.plugin_root_directory+"presets.json"
+            json_file = alg.fileIO.open(preset_file_path, 'r')
+        }catch(err){
+            alg.log.exception(err)
+        }
+        preset_folder = json_file.readAll()
+    }
     function getSelectedSets(){
       var selected_set=[]
       var i=0
-      
+
       for (i in texture_sets_SV.children){
         if (texture_sets_SV.children[i].checked==true){
             selected_set.push(texture_sets_SV.children[i].text)
@@ -162,7 +181,7 @@ Button {
     function selectVisible(){
       // No API found for this feature - -...
       return
-      }  
+      }
     function setSize(){
       var i=0
       var texture_set = []
@@ -174,8 +193,19 @@ Button {
 
       var size_int = parseInt(textureset_size_CB.currentText)
       var log_size = (Math.log(size_int)/Math.log(2))
-      alg.texturesets.setResolution(texture_set,[log_size, log_size])  
+      alg.texturesets.setResolution(texture_set,[log_size, log_size])
       }
+    function setColor(){
+      var i=0
+      for (i in texture_sets_SV.children){
+        if (texture_sets_SV.children[i].checked==true){
+            var color_profile = set_color_profile_CB.currentText
+            var texture_set = texture_sets_SV.children[i].text
+            var selected_channel = set_channel_CB.currentText
+            alg.texturesets.editChannel(texture_set, selected_channel, color_profile)
+            }
+        }
+    }
     function export_tex(){
       alg.mapexport.exportDocumentMaps(
         "PBR MetalRough",
@@ -183,7 +213,7 @@ Button {
         "tiff",
        {resolution:[256,256]},
        ["1005"])
-      }
+    }
     function addChannel(){
       try{
         var current_textureset = alg.texturesets.getActiveTextureSet()[0]
@@ -193,7 +223,10 @@ Button {
         var i=0
         for (i in texture_sets_SV.children){
           if (texture_sets_SV.children[i].checked==true){
-            alg.texturesets.addChannel(texture_sets_SV.children[i].text, current_slot,channel_info,texture_label)
+            try{
+                alg.texturesets.addChannel(texture_sets_SV.children[i].text, current_slot,channel_info,texture_label)
+                }catch(err){}
+
             }
           }
         }
@@ -267,7 +300,7 @@ Button {
           onClicked:{
             dliang_sp_tools.selectVisible()
               }
-            }      
+            }
         */
         AlgTabBar {
             id: features_tab
@@ -293,7 +326,6 @@ Button {
                 width:children.width
                 activeCloseButton:null
               }
-            
           }
           StackLayout{
             anchors.topMargin: 10
@@ -391,7 +423,6 @@ Button {
                       }
                   }
                 }
-          
             // modify texture set tab
             GridLayout{
                 id: modify_channel_layout
@@ -415,18 +446,79 @@ Button {
                         ListElement { text: "4096" }
                     }
                   }
+                AlgLabel{text: "color profile: "}
+                AlgComboBox {
+                  id: set_channel_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: set_channel_LE
+                        ListElement { text: "ambientOcclusion" }
+                        ListElement { text: "anisotropylevel" }
+                        ListElement { text: "anisotropyangle" }
+                        ListElement { text: "basecolor" }
+                        ListElement { text: "blendingmask" }
+                        ListElement { text: "diffuse" }
+                        ListElement { text: "displacement" }
+                        ListElement { text: "emissive" }
+                        ListElement { text: "glossiness" }
+                        ListElement { text: "height" }
+                        ListElement { text: "ior" }
+                        ListElement { text: "metallic" }
+                        ListElement { text: "normal" }
+                        ListElement { text: "opacity" }
+                        ListElement { text: "reflection" }
+                        ListElement { text: "roughness" }
+                        ListElement { text: "scattering" }
+                        ListElement { text: "specular" }
+                        ListElement { text: "specularlevel" }
+                        ListElement { text: "transmissive" }
+                        ListElement { text: "user0" }
+                        ListElement { text: "user1" }
+                        ListElement { text: "user2" }
+                        ListElement { text: "user3" }
+                        ListElement { text: "user4" }
+                        ListElement { text: "user5" }
+                        ListElement { text: "user6" }
+                        ListElement { text: "user7" }
+                    }
+                  }
+                AlgLabel{text: ""}
+                AlgComboBox {
+                  id: set_color_profile_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: set_color_profile_LE
+                        ListElement { text: "sRGB8" }
+                        ListElement { text: "L8" }
+                        ListElement { text: "RGB8" }
+                        ListElement { text: "L16" }
+                        ListElement { text: "RGB16" }
+                        ListElement { text: "L16F" }
+                        ListElement { text: "RGB16F" }
+                        ListElement { text: "L32F" }
+                        ListElement { text: "RGB32F" }
+                    }
+                }
                 AlgButton{
                     id: modify_texutre_size_btn
                     Layout.fillWidth: true
-                    Layout.columnSpan: 2
-                  text: "Adjust Texture Sets"
+                  text: "Adjust Texture Size"
                   Layout.preferredHeight: 30
                     onClicked:{
                       dliang_sp_tools.setSize()
                       }
                   }
+                AlgButton{
+                    id: modify_depth_btn
+                    Layout.fillWidth: true
+                  text: "Adjust Color Profile"
+                  Layout.preferredHeight: 30
+                    onClicked:{
+                      dliang_sp_tools.setColor()
+                      }
+                  }
                 }
-            //
+            // Export textures tab
             GridLayout{
                 id: export_tab_layout
                 anchors.topMargin: 10
@@ -437,7 +529,7 @@ Button {
                 columnSpacing: 10
 
                 AlgLabel{text:"Export Size"}
-                
+
                 AlgComboBox {
                   id: export_size_CB
                   Layout.fillWidth: true
@@ -454,7 +546,7 @@ Button {
                         ListElement { text: "16K" }
                     }
                   }
-                
+
                 AlgComboBox {
                   id: export_format_CB
                   Layout.fillWidth: true
@@ -480,33 +572,26 @@ Button {
                         ListElement { text: "16 bit" }
                     }
                   }
-                
-                AlgButton{
-                  id:export_btn
-                  text: "export maps"
-                  Layout.fillWidth:true
-                  Layout.columnSpan:2
-                  Layout.preferredHeight:30
-                  onClicked:{
-                    dliang_sp_tools.export_tex()
-                    }
-                  }
 
                 RowLayout{
-                    id: preset_column
+                    id: preset_column_RL
                     anchors.topMargin: 10
                     Layout.fillHeight: false
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
                     Layout.fillWidth: true
                     Layout.columnSpan: 2
 
+                    AlgLabel{text:"Export Preset"}
                     AlgComboBox {
                         id:export_presets_CB
                         Layout.fillWidth:true
                         Layout.preferredHeight:30
+                        currentIndex: 0
                         FolderListModel{
                             id:export_preset_LM
-                            folder:"./"
+                            folder: preset_folder
+                            showDirs:false
+                            nameFilters: ["*.spexp"]
                         }
 
                         model:export_preset_LM
@@ -522,7 +607,54 @@ Button {
                         }
                     }
                 }
-              }
+
+                RowLayout{
+                    id: output_dir_RL
+                    anchors.topMargin: 10
+                    Layout.fillHeight: false
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                    Layout.fillWidth: true
+                    Layout.columnSpan: 2
+
+                    AlgLabel{text:"Output Path"}
+                    AlgTextEdit{
+                        id: output_dir_TE
+                        Layout.fillWidth: true
+                        text: "D:\\"}
+
+                    AlgButton {
+                        id: output_folder_btn
+                        iconName:"icons/open_folder.png"
+                        anchors.right: parent.right
+                        onClicked: {
+
+                        }
+                    }
+                }
+
+
+                AlgButton{
+                  id:export_btn
+                  text: "export maps"
+                  Layout.fillWidth:true
+                  Layout.columnSpan:2
+                  Layout.preferredHeight:30
+                  onClicked:{
+                    dliang_sp_tools.export_tex()
+                    }
+                  }
+
+                AlgButton{
+                  id:test_btn
+                  text: "test btn"
+                  Layout.fillWidth:true
+                  Layout.columnSpan:2
+                  Layout.preferredHeight:30
+                  onClicked:{
+                    dliang_sp_tools.test()
+                    }
+                  }
+            }
             //
             //
             }
