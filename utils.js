@@ -20,5 +20,5 @@ function get_spexp(pathName){
 
 function send_to_maya(){
     var cmd = "C:/Users/obi/Desktop/test.py";
-    Runtime.getRuntime().exec("python "+cmd);
+    System.exec("python "+cmd);
 }

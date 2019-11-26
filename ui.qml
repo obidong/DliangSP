@@ -6,7 +6,6 @@ import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 import AlgWidgets 2.0
 import Qt.labs.folderlistmodel 1.0
-import "utils.js" as Utils
 
 Button {
   id: root
@@ -18,7 +17,8 @@ Button {
   property var exportPath:null
   property var texture_set_list:null
   property string preset_folder:alg.fileIO.open((alg.plugin_root_directory+"presets.json"), 'r').readAll()
-  property var outputpath: null
+  property string plugin_folder: alg.plugin_root_directory
+
 
 
   style: ButtonStyle {
@@ -135,7 +135,9 @@ Button {
         }
       }
     function test(){
-        Utils.send_to_maya()
+        var mystr = ("\""+alg.plugin_root_directory+"connect_maya.bat\"")
+        alg.log.info(mystr)
+        alg.subprocess.check_output( ["python.exe", "connect_maya.py","mymy"])
         }
 
     // functions
