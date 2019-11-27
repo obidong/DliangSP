@@ -19,7 +19,40 @@ Button {
   property string preset_folder:alg.fileIO.open((alg.plugin_root_directory+"presets.json"), 'r').readAll()
   property string plugin_folder: alg.plugin_root_directory
 
+  property var project_tex_output_format: "tiff"
+  property var project_tex_output_preset: 0
+  property string project_tex_output_path: ""
 
+
+  property var channel_identifier:[
+      "ambientOcclusion",
+      "anisotropylevel",
+      "anisotropyangle",
+      "basecolor",
+      "blendingmask",
+      "diffuse",
+      "displacement",
+      "emissive",
+      "glossiness",
+      "height",
+      "ior",
+      "metallic",
+      "normal",
+      "opacity",
+      "reflection",
+      "roughness",
+      "scattering",
+      "specular",
+      "specularlevel",
+      "transmissive",
+      "user0",
+      "user1",
+      "user2",
+      "user3",
+      "user4",
+      "user5",
+      "user6",
+      "user7"  ]
 
   style: ButtonStyle {
     background: Rectangle {
@@ -37,9 +70,6 @@ Button {
 
   onClicked: {
       try{
-
-          alg.log.info(preset_folder)
-
           if(alg.project.isOpen()){
               dliang_sp_tools.initParams()
           }
@@ -85,7 +115,11 @@ Button {
 
     // delete later
     function initParams(){
-        return
+        if(alg.project.settings.contains("output_path")){
+          project_tex_output_path = alg.project.settings.value("output_path")
+        }else{
+          project_tex_output_path =  "D:\\Please_Select_Output_Path"
+        }
       }
     function refreshInterface() {
       try {
@@ -139,6 +173,10 @@ Button {
         alg.log.info(mystr)
         alg.subprocess.check_output( ["python.exe", "connect_maya.py","mymy"])
         }
+    function test_script(){
+        alg.log.info("=== start testing ===")
+        alg.log.info(project_tex_output_path)
+    }
 
     // functions
     function getTextureSetInfo(){
@@ -283,6 +321,7 @@ Button {
             dliang_sp_tools.selectCheckbox(1)
               }
             }
+
         AlgButton{
           id: hide_all_btn
           text: "deselect all"
@@ -304,6 +343,7 @@ Button {
               }
             }
         */
+
         AlgTabBar {
             id: features_tab
             anchors.topMargin: 10
@@ -325,6 +365,12 @@ Button {
             AlgTabButton {
                 id: export_tab_btn
                 text: "Export"
+                width:children.width
+                activeCloseButton:null
+              }
+            AlgTabButton {
+                id: advanced_tab_btn
+                text: "Advanced"
                 width:children.width
                 activeCloseButton:null
               }
@@ -361,7 +407,8 @@ Button {
                 AlgComboBox {
                   id: channels_CB
                   Layout.fillWidth: true
-                  model: ListModel {
+                  model:
+                      ListModel {
                         id: channels_LE
                         ListElement { text: "ambientOcclusion" }
                         ListElement { text: "anisotropylevel" }
@@ -391,8 +438,8 @@ Button {
                         ListElement { text: "user5" }
                         ListElement { text: "user6" }
                         ListElement { text: "user7" }
-                    }
-                  }
+                      }
+                }
                 AlgLabel {
                   id: channel_info_label
                         text: " channel info:"
@@ -533,6 +580,23 @@ Button {
                 AlgLabel{text:"Export Size"}
 
                 AlgComboBox {
+                  id: export_format_CB
+                  Layout.fillWidth: true
+                  model: ListModel {
+                        id: export_format_LE
+                        ListElement { text: "tiff" }
+                        ListElement { text: "png" }
+                        ListElement { text: "jpeg" }
+                        ListElement { text: "exr" }
+                        ListElement { text: "bmp" }
+                        ListElement { text: "tga" }
+                        ListElement { text: "psd" }
+                        ListElement { text: "hdr" }
+                        ListElement { text: "gif" }
+                    }
+                  }
+
+                AlgComboBox {
                   id: export_size_CB
                   Layout.fillWidth: true
                   model: ListModel {
@@ -549,22 +613,6 @@ Button {
                     }
                   }
 
-                AlgComboBox {
-                  id: export_format_CB
-                  Layout.fillWidth: true
-                  model: ListModel {
-                        id: export_format_LE
-                        ListElement { text: "tiff" }
-                        ListElement { text: "png" }
-                        ListElement { text: "jpeg" }
-                        ListElement { text: "exr" }
-                        ListElement { text: "bmp" }
-                        ListElement { text: "tga" }
-                        ListElement { text: "psd" }
-                        ListElement { text: "hdr" }
-                        ListElement { text: "gif" }
-                    }
-                  }
                 AlgComboBox {
                   id: bit_depth_CB
                   Layout.fillWidth: true
@@ -622,16 +670,31 @@ Button {
                     AlgTextEdit{
                         id: output_dir_TE
                         Layout.fillWidth: true
-                        text: "D:\\"}
+                        text: project_tex_output_path}
 
                     AlgButton {
                         id: output_folder_btn
                         iconName:"icons/open_folder.png"
                         anchors.right: parent.right
-                        onClicked: {
-
+                        onClicked:{
+                            if(alg.project.isOpen()){
+                                export_path_dialog.open()
+                            }else{
+                                alg.log.error("Need to open a project")
+                            }
                         }
                     }
+
+                    FileDialog {
+                          id: export_path_dialog
+                          title: "Please select the export folder"
+                          selectFolder:true
+                          onAccepted: {
+                              output_dir_TE.text = alg.fileIO.urlToLocalFile(fileUrl.toString())
+                              alg.project.settings.setValue("output_path", alg.fileIO.urlToLocalFile(fileUrl.toString()));
+                      }
+                    }
+
                 }
 
 
@@ -645,21 +708,88 @@ Button {
                     dliang_sp_tools.export_tex()
                     }
                   }
-
                 AlgButton{
                   id:test_btn
-                  text: "test btn"
+                  text: "test script"
                   Layout.fillWidth:true
                   Layout.columnSpan:2
                   Layout.preferredHeight:30
                   onClicked:{
-                    dliang_sp_tools.test()
+                    dliang_sp_tools.test_script()
                     }
                   }
+
             }
-            //
-            //
-            }
-      }
+            // advance tab
+            GridLayout{
+                id: advanced_tab_layout
+                anchors.topMargin: 10
+                Layout.fillHeight: false
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                Layout.fillWidth: true
+                columns: 2
+                columnSpacing: 10
+
+                AlgCheckBox{
+                    id: enable_connection_CB
+                    text: "Create Shader In Maya"
+                }
+
+                RowLayout{
+                    AlgLabel{text:"port"}
+                    AlgTextEdit{
+                        Layout.fillWidth: true
+                        id:port_TI
+                        text:"9001"
+                    }
+                }
+
+                AlgLabel{
+                    text:"Renderer"
+                    Layout.alignment: Qt.AlignRight
+                }
+                AlgComboBox{
+                    id: create_maya_shader_CBB
+                    Layout.fillWidth: true
+                    model: ListModel {
+                          id: create_maya_shader_LM
+                          ListElement { text: "Arnold" }
+                    }
+                }
+
+
+                /*
+                ColumnLayout{
+                    Layout.columnSpan: 2
+                    Layout.fillWidth: true
+                    AlgScrollView {
+                      Layout.fillWidth: true
+                      height: 100
+                      Column {
+                        Repeater {
+                          model: channel_identifier
+                          delegate:
+                              Row{
+                                AlgLabel {
+                                  text: modelData
+                                  Layout.preferredHeight: 35
+                                  width:120
+                                }
+                                AlgTextEdit {
+                                    Layout.fillWidth: true
+                                    text: modelData
+                                    Layout.preferredHeight: 35
+                                }
+                          }
+                        }
+
+                      }
+                    }
+                }
+                */
+
+            }// end of stack layout
+        }//end of alg tab bar
     } //end of main layout
-  } // end of button
+  } // end of window
+}// end of button
