@@ -18,12 +18,9 @@ Button {
   property var texture_set_list:null
   property string preset_folder:alg.fileIO.open((alg.plugin_root_directory+"presets.json"), 'r').readAll()
   property string plugin_folder: alg.plugin_root_directory
-
-  property var project_tex_output_format: "tiff"
-  property var project_tex_output_preset: 0
+  property var project_tex_output_format: ""
   property string project_tex_output_path: ""
-
-
+  property var project_output_textureset:[]
   property var channel_identifier:[
       "ambientOcclusion",
       "anisotropylevel",
@@ -53,6 +50,7 @@ Button {
       "user5",
       "user6",
       "user7"  ]
+
 
   style: ButtonStyle {
     background: Rectangle {
@@ -115,11 +113,21 @@ Button {
 
     // delete later
     function initParams(){
+        // refresh output path
         if(alg.project.settings.contains("output_path")){
           project_tex_output_path = alg.project.settings.value("output_path")
         }else{
           project_tex_output_path =  "D:\\Please_Select_Output_Path"
         }
+        // refresh output format
+        if(alg.project.settings.contains("output_format")){
+          project_tex_output_format = alg.project.settings.value("output_format")
+        }else{
+          project_tex_output_format =  "tiff"
+        }
+        export_format_LE.get(0).text = project_tex_output_format
+        alg.log.info(project_tex_output_format)
+
       }
     function refreshInterface() {
       try {
@@ -152,21 +160,45 @@ Button {
       }
       }
     function getParams(){
-          return {
-          out_path : p_output,
-        udims : check_udims.checked &&  combo_software.currentText != "Blender" &&  combo_software.currentText != "Cinema 4D"? 1: 0,
-        sw : combo_software.currentText,
-        houpath: txt_houpath.text,
-        port : txt_port.text,
-        rndr : combo_renderer.currentText,
-        res :parseInt(combo_resolution.currentText),
-        ext : getExt( combo_format.currentText),
-        main_bit : parseInt(combo_main_bitdepth.currentText),
-        normal_bit : parseInt(combo_normal_bitdepth.currentText),
-        height_bit : parseInt(combo_height_bitdepth.currentText),
-        packed :  check_packed.checked ? 1: 0,
-        normal : combo_normal.currentText == "Open GL" ? 1: 0
+        // get parameters from UI
+        // save project settings based on UI element selections
+
+        // output texture sets
+        project_output_textureset = dliang_sp_tools.getSelectedSets()
+
+        // output texture folder
+        project_tex_output_path = output_dir_TE.text
+        alg.project.settings.setValue("output_path", project_tex_output_path)
+
+        // output format
+        project_tex_output_format = export_format_CB.currentText
+        alg.project.settings.setValue("output_format", export_format_CB.currentText)
+
+        // output preset
+        var out_preset = export_presets_CB.currentText.split(".")[0]
+
+        // resolution
+        var out_res
+        out_res = export_size_CB.currentText
+        if (out_res == "use default"){
+            out_res=null
+        }else{
+            out_res=parseInt(out_res)
         }
+
+        // output texture depth
+        var out_depth
+        if(bit_depth_CB.currentText == "8 bit"){
+            out_depth = 8
+        }
+        else{
+            out_depth = 16
+        }
+
+        // port
+        var port = port_TE.text
+
+        return [out_preset, project_tex_output_path, project_tex_output_format, out_res, out_depth, project_output_textureset, port]
       }
     function test(){
         var mystr = ("\""+alg.plugin_root_directory+"connect_maya.bat\"")
@@ -200,16 +232,15 @@ Button {
         preset_folder = json_file.readAll()
     }
     function getSelectedSets(){
-      var selected_set=[]
-      var i=0
-
-      for (i in texture_sets_SV.children){
+        var selected_set=[]
+        var i=0
+        for (i in texture_sets_SV.children){
         if (texture_sets_SV.children[i].checked==true){
             selected_set.push(texture_sets_SV.children[i].text)
           }
         }
-      alg.log.info(selected_set)
-      }
+        return selected_set
+        }
     function selectCheckbox(state){
       var i=0
       for (i in texture_sets_SV.children){
@@ -224,13 +255,7 @@ Button {
       }
     function setSize(){
       var i=0
-      var texture_set = []
-      for (i in texture_sets_SV.children){
-        if (texture_sets_SV.children[i].checked==true){
-          texture_set.push(texture_sets_SV.children[i].text)
-          }
-        }
-
+      var texture_set = dliang_sp_tools.getSelectedSets()
       var size_int = parseInt(textureset_size_CB.currentText)
       var log_size = (Math.log(size_int)/Math.log(2))
       alg.texturesets.setResolution(texture_set,[log_size, log_size])
@@ -246,14 +271,41 @@ Button {
             }
         }
     }
+
     function export_tex(){
-      alg.mapexport.exportDocumentMaps(
-        "PBR MetalRough",
-        "c:/tmp/export/pbr",
-        "tiff",
-       {resolution:[256,256]},
-       ["1005"])
+        alg.log.info(" === exporting textures === ")
+        var params = getParams()
+        /*
+        0. out_preset,
+        1. project_tex_output_path
+        2. project_tex_output_format
+        3. out_res
+        4. out_depth
+        5. project_output_textureset
+        6. port
+        */
+
+        if (params[3]==null){
+            alg.log.info("use document size for export")
+            var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
+        }else{
+            var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
+        }
+
+        for(var textureset in export_log){
+            alg.log.info("export info: ")
+            alg.log.info(export_log[textureset])
+        }
+
+        if (enable_connection_CB.checked){
+            alg.log.info("=== creating shader ===")
+            //alg.subprocess.check_output( ["python.exe", "connect_maya.py", params[6],params[0]])
+            }
+        else{
+            return
+        }
     }
+
     function addChannel(){
       try{
         var current_textureset = alg.texturesets.getActiveTextureSet()[0]
@@ -584,6 +636,7 @@ Button {
                   Layout.fillWidth: true
                   model: ListModel {
                         id: export_format_LE
+                        ListElement { text: "" }
                         ListElement { text: "tiff" }
                         ListElement { text: "png" }
                         ListElement { text: "jpeg" }
@@ -609,7 +662,6 @@ Button {
                         ListElement { text: "2048" }
                         ListElement { text: "4096" }
                         ListElement { text: "8192" }
-                        ListElement { text: "16K" }
                     }
                   }
 
@@ -739,7 +791,7 @@ Button {
                     AlgLabel{text:"port"}
                     AlgTextEdit{
                         Layout.fillWidth: true
-                        id:port_TI
+                        id:port_TE
                         text:"9001"
                     }
                 }
