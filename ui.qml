@@ -2,12 +2,9 @@ import QtQuick 2.3
 import QtQuick.Window 2.2
 import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.0
-//import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 import AlgWidgets 2.0
 import Qt.labs.folderlistmodel 1.0
-//import AlgWidgets 2.0
-//import QtQuick 2.7
 import QtQuick.Controls 2.0
 
 AlgButton {
@@ -141,6 +138,7 @@ AlgButton {
         }
         export_format_LE.get(0).text = project_tex_output_format
 
+        material_name_TE.text = alg.project.name()+"_mat"
       }
     function refreshInterface() {
       try {
@@ -316,6 +314,11 @@ AlgButton {
     function analyzingProject(){
         alg.log.info(" === Analyzing Export Presets === ")
         var params = getParams()
+
+        var mesh_url = alg.project.lastImportedMeshUrl()
+        var file_name = mesh_url.substring(mesh_url.lastIndexOf("/")+1).split(".")[0]
+        var project_name = alg.project.name()
+
         /*
         0. out_preset,
         1. project_tex_output_path
@@ -341,23 +344,23 @@ AlgButton {
         for (var index in unique_keys){
             var token = unique_keys[index]
             if (dliang_sp_tools.filterPreset(token,"BaseColor")){
-                basecolor_TE.text = token
+                basecolor_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"Roughness")){
-                roughness_TE.text = token
+                roughness_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"Metallic")){
-                metallic_TE.text = token
+                metallic_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"Normal")){
-                normal_TE.text = token
+                normal_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"Displacement")){
-                displacement_TE.text = token
+                displacement_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"Emissive")){
-                emissive_TE.text = token
+                emissive_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"Opacity")){
-                opacity_TE.text = token
+                opacity_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"SSS_color")){
-                sss_color_TE.text = token
+                sss_color_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"SSS_gain")){
-                sss_gain_TE.text = token
+                sss_gain_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }
         }
 
@@ -378,6 +381,19 @@ AlgButton {
 
 
     }
+    function syncToMaya(export_log){
+        var keys = []
+        for(var textureset in export_log){
+            for(var p in export_log[textureset]){
+                keys.push(p)
+            }
+        }
+
+        var unique_keys = keys.filter(function(elem, index, self) {
+            return index === self.indexOf(elem);
+        })
+    }
+
     function exportTex(){
         alg.log.info(" === exporting textures === ")
         var params = getParams()
@@ -393,14 +409,16 @@ AlgButton {
 
         if (params[3]==null){
             alg.log.info("use document size for export")
+            var export_log=alg.mapexport.getPathsExportDocumentMaps(params[0], params[1], params[2],params[5])
             //var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
         }else{
+            var export_log=alg.mapexport.getPathsExportDocumentMaps(params[0], params[1], params[2],params[5])
             //var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
         }
 
         // export to maya
         if (enable_connection_CB.checked){
-            dliang_sp_tools.prepForSync()
+            dliang_sp_tools.syncToMaya()
             alg.log.info("=== creating shader ===")
             //alg.subprocess.check_output( ["python.exe", "connect_maya.py", params[6],params[0]])
             }
@@ -776,6 +794,11 @@ AlgButton {
 
                         model:export_preset_LM
                         textRole: 'fileName'
+                        onCurrentTextChanged:{
+                            if(enable_connection_CB.checked){
+                                dliang_sp_tools.prepForSync()
+                            }
+                        }
                     }
 
                     AlgButton {
@@ -797,7 +820,7 @@ AlgButton {
                     Layout.columnSpan: 2
 
                     AlgLabel{text:"Output Path"}
-                    AlgTextEdit{
+                    AlgTextInput{
                         id: output_dir_TE
                         Layout.fillWidth: true
                         text: project_tex_output_path}
@@ -827,12 +850,20 @@ AlgButton {
 
                 }
 
-                AlgButton{
+                AlgToolButton{
                   id:export_btn
-                  text: "export maps"
+                  iconName:"icons/export_textures.png"
+                  iconSize:Qt.size(200,35)
                   Layout.fillWidth:true
                   Layout.columnSpan:2
-                  Layout.preferredHeight:30
+                  Layout.preferredHeight:40
+                  background:Rectangle{
+                    color: export_btn.hovered && !export_btn.loading ? "#696969" : "transparent"
+                    border.width: 2
+                    border.color: "#c5c5c5"
+                    radius: 6
+
+                  }
                   onClicked:{
                     dliang_sp_tools.exportTex()
                     }
@@ -861,6 +892,15 @@ AlgButton {
                         AlgCheckBox{
                             id: enable_connection_CB
                             text: "Create Shader In Maya"
+                            onCheckedChanged:{
+                                if (enable_connection_CB.checked){
+                                    dliang_sp_tools.prepForSync()
+                                    export_btn.iconName = "icons/export_maya.png"
+                                }else{
+                                    export_btn.iconName = "icons/export_textures.png"
+                                }
+
+                            }
                         }
 
                         RowLayout{
