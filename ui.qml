@@ -2,16 +2,31 @@ import QtQuick 2.3
 import QtQuick.Window 2.2
 import QtQuick.Layouts 1.3
 import QtQuick.Dialogs 1.0
-import QtQuick.Controls 1.4
+//import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 import AlgWidgets 2.0
 import Qt.labs.folderlistmodel 1.0
+//import AlgWidgets 2.0
+//import QtQuick 2.7
+import QtQuick.Controls 2.0
 
-Button {
+AlgButton {
   id: root
   antialiasing: true
   width: 30; height: 30
   tooltip: "Load dliang tool"
+
+  property var legal_strings: {
+    "BaseColor":["aseColor","iffuse","Dif","dif","lebedo"],
+    "Roughness":["oughness","spcrgh","Spcrgh"],
+    "Normal":["ormal","nml","nor"],
+    "Metallic":["etallic","etalness","metal","Metal"],
+    "Displacement":["isplacement","dsp","Dsp","disp","Disp","Height","height"],
+    "Emissive":["Emissive","emissive","emission","Emission"],
+    "Opacity":["pacity"],
+    "SSS_gain":["cattering"],
+    "SSS_color":["SSS_color"]
+  }
   property bool loading: false
   property var fbxPath:null
   property var exportPath:null
@@ -52,19 +67,18 @@ Button {
       "user7"  ]
 
 
-  style: ButtonStyle {
     background: Rectangle {
-      width: control.width; height: control.height
+      width: root.width; height: root.height
       color: "transparent"
       Image {
-        source: control.hovered && !control.loading ? "icons/load_tool_on.png" : "icons/load_tool_off.png"
+        source: root.hovered && !root.loading ? "icons/load_tool_on.png" : "icons/load_tool_off.png"
         fillMode: Image.PreserveAspectFit
-        width: control.width; height: control.height
+        width: root.width; height: root.height
         mipmap: true
-        opacity: control.loading ? 0.5 : 1
+        opacity: root.loading ? 0.5 : 1
       }
     }
-  }
+
 
   onClicked: {
       try{
@@ -102,7 +116,7 @@ Button {
     title: "Dliang SP Tool Kit"
     visible: false
     width: 250
-    height: 400
+    height: 460
     minimumWidth: 300
     minimumHeight: 400
     flags: Qt.Window
@@ -111,7 +125,7 @@ Button {
       | Qt.WindowMinMaxButtonsHint
       | Qt.WindowCloseButtonHint // close button
 
-    // delete later
+    // basic functions
     function initParams(){
         // refresh output path
         if(alg.project.settings.contains("output_path")){
@@ -126,7 +140,6 @@ Button {
           project_tex_output_format =  "tiff"
         }
         export_format_LE.get(0).text = project_tex_output_format
-        alg.log.info(project_tex_output_format)
 
       }
     function refreshInterface() {
@@ -180,7 +193,7 @@ Button {
         // resolution
         var out_res
         out_res = export_size_CB.currentText
-        if (out_res == "use default"){
+        if (out_res == "use original"){
             out_res=null
         }else{
             out_res=parseInt(out_res)
@@ -200,6 +213,7 @@ Button {
 
         return [out_preset, project_tex_output_path, project_tex_output_format, out_res, out_depth, project_output_textureset, port]
       }
+
     function test(){
         var mystr = ("\""+alg.plugin_root_directory+"connect_maya.bat\"")
         alg.log.info(mystr)
@@ -210,7 +224,7 @@ Button {
         alg.log.info(project_tex_output_path)
     }
 
-    // functions
+    // utils functions
     function getTextureSetInfo(){
       var doc_info = alg.mapexport.documentStructure()
       var i = 0
@@ -267,45 +281,14 @@ Button {
             var color_profile = set_color_profile_CB.currentText
             var texture_set = texture_sets_SV.children[i].text
             var selected_channel = set_channel_CB.currentText
-            alg.texturesets.editChannel(texture_set, selected_channel, color_profile)
+            try{
+                alg.texturesets.editChannel(texture_set, selected_channel, color_profile)
+            }catch(err){
+                alg.log.exception(err)
+              }
             }
         }
     }
-
-    function export_tex(){
-        alg.log.info(" === exporting textures === ")
-        var params = getParams()
-        /*
-        0. out_preset,
-        1. project_tex_output_path
-        2. project_tex_output_format
-        3. out_res
-        4. out_depth
-        5. project_output_textureset
-        6. port
-        */
-
-        if (params[3]==null){
-            alg.log.info("use document size for export")
-            var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
-        }else{
-            var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
-        }
-
-        for(var textureset in export_log){
-            alg.log.info("export info: ")
-            alg.log.info(export_log[textureset])
-        }
-
-        if (enable_connection_CB.checked){
-            alg.log.info("=== creating shader ===")
-            //alg.subprocess.check_output( ["python.exe", "connect_maya.py", params[6],params[0]])
-            }
-        else{
-            return
-        }
-    }
-
     function addChannel(){
       try{
         var current_textureset = alg.texturesets.getActiveTextureSet()[0]
@@ -329,6 +312,112 @@ Button {
     function setPresetPath(){
         export_preset_dialog.visible = true
     }
+
+    function analyzingProject(){
+        alg.log.info(" === Analyzing Export Presets === ")
+        var params = getParams()
+        /*
+        0. out_preset,
+        1. project_tex_output_path
+        2. project_tex_output_format
+        3. out_res
+        4. out_depth
+        5. project_output_textureset
+        6. port
+        */
+
+        var export_log=alg.mapexport.getPathsExportDocumentMaps(params[0], params[1], params[2],params[5])
+        var keys = []
+        for(var textureset in export_log){
+            for(var p in export_log[textureset]){
+                keys.push(p)
+            }
+        }
+
+        var unique_keys = keys.filter(function(elem, index, self) {
+            return index === self.indexOf(elem);
+        })
+
+        for (var index in unique_keys){
+            var token = unique_keys[index]
+            if (dliang_sp_tools.filterPreset(token,"BaseColor")){
+                basecolor_TE.text = token
+            }else if(dliang_sp_tools.filterPreset(token,"Roughness")){
+                roughness_TE.text = token
+            }else if(dliang_sp_tools.filterPreset(token,"Metallic")){
+                metallic_TE.text = token
+            }else if(dliang_sp_tools.filterPreset(token,"Normal")){
+                normal_TE.text = token
+            }else if(dliang_sp_tools.filterPreset(token,"Displacement")){
+                displacement_TE.text = token
+            }else if(dliang_sp_tools.filterPreset(token,"Emissive")){
+                emissive_TE.text = token
+            }else if(dliang_sp_tools.filterPreset(token,"Opacity")){
+                opacity_TE.text = token
+            }else if(dliang_sp_tools.filterPreset(token,"SSS_color")){
+                sss_color_TE.text = token
+            }else if(dliang_sp_tools.filterPreset(token,"SSS_gain")){
+                sss_gain_TE.text = token
+            }
+        }
+
+    }
+    function prepForSync(){
+        basecolor_TE.text=""
+        metallic_TE.text=""
+        roughness_TE.text=""
+        normal_TE.text=""
+        displacement_TE.text=""
+        emissive_TE.text = ""
+        opacity_TE.text=""
+        sss_color_TE.text=""
+        sss_gain_TE.text=""
+
+        dliang_sp_tools.analyzingProject()
+        // init
+
+
+    }
+    function exportTex(){
+        alg.log.info(" === exporting textures === ")
+        var params = getParams()
+        /*
+        0. out_preset,
+        1. project_tex_output_path
+        2. project_tex_output_format
+        3. out_res
+        4. out_depth
+        5. project_output_textureset
+        6. port
+        */
+
+        if (params[3]==null){
+            alg.log.info("use document size for export")
+            //var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
+        }else{
+            //var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
+        }
+
+        // export to maya
+        if (enable_connection_CB.checked){
+            dliang_sp_tools.prepForSync()
+            alg.log.info("=== creating shader ===")
+            //alg.subprocess.check_output( ["python.exe", "connect_maya.py", params[6],params[0]])
+            }
+        else{
+            return
+        }
+    }
+
+    function filterPreset(token,identifier){
+        for(var i in legal_strings[identifier]){
+            if(token.includes(legal_strings[identifier][i])){
+                alg.log.info(token)
+                return true}
+        }
+        return false
+    }
+
 
     //Layout
     ColumnLayout{
@@ -384,17 +473,6 @@ Button {
             dliang_sp_tools.selectCheckbox(0)
               }
           }
-        /*
-        AlgButton{
-          id: select_visible_btn
-          text: "select visible"
-          Layout.preferredHeight:25
-          Layout.fillWidth:true
-          onClicked:{
-            dliang_sp_tools.selectVisible()
-              }
-            }
-        */
 
         AlgTabBar {
             id: features_tab
@@ -535,6 +613,7 @@ Button {
                 columnSpacing: 10
 
                 AlgLabel{text: "texture size: "}
+                AlgLabel{text: "color profile: "}
                 AlgComboBox {
                   id: textureset_size_CB
                   Layout.fillWidth: true
@@ -547,7 +626,6 @@ Button {
                         ListElement { text: "4096" }
                     }
                   }
-                AlgLabel{text: "color profile: "}
                 AlgComboBox {
                   id: set_channel_CB
                   Layout.fillWidth: true
@@ -654,7 +732,7 @@ Button {
                   Layout.fillWidth: true
                   model: ListModel {
                         id: export_size_LE
-                        ListElement { text: "use default" }
+                        ListElement { text: "use original" }
                         ListElement { text: "128" }
                         ListElement { text: "256" }
                         ListElement { text: "512" }
@@ -749,7 +827,6 @@ Button {
 
                 }
 
-
                 AlgButton{
                   id:export_btn
                   text: "export maps"
@@ -757,88 +834,155 @@ Button {
                   Layout.columnSpan:2
                   Layout.preferredHeight:30
                   onClicked:{
-                    dliang_sp_tools.export_tex()
-                    }
-                  }
-                AlgButton{
-                  id:test_btn
-                  text: "test script"
-                  Layout.fillWidth:true
-                  Layout.columnSpan:2
-                  Layout.preferredHeight:30
-                  onClicked:{
-                    dliang_sp_tools.test_script()
+                    dliang_sp_tools.exportTex()
                     }
                   }
 
-            }
-            // advance tab
-            GridLayout{
-                id: advanced_tab_layout
-                anchors.topMargin: 10
-                Layout.fillHeight: false
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
-                Layout.fillWidth: true
-                columns: 2
-                columnSpacing: 10
-
-                AlgCheckBox{
-                    id: enable_connection_CB
-                    text: "Create Shader In Maya"
-                }
-
-                RowLayout{
-                    AlgLabel{text:"port"}
-                    AlgTextEdit{
-                        Layout.fillWidth: true
-                        id:port_TE
-                        text:"9001"
-                    }
-                }
-
-                AlgLabel{
-                    text:"Renderer"
-                    Layout.alignment: Qt.AlignRight
-                }
-                AlgComboBox{
-                    id: create_maya_shader_CBB
+                Rectangle{
+                    color:"#c5c5c5"
+                    Layout.preferredHeight: 3
                     Layout.fillWidth: true
-                    model: ListModel {
-                          id: create_maya_shader_LM
-                          ListElement { text: "Arnold" }
-                    }
-                }
-
-
-                /*
-                ColumnLayout{
                     Layout.columnSpan: 2
+                }
+                // advance options
+                AlgGroupWidget{
+                    text:"Export to Maya"
                     Layout.fillWidth: true
-                    AlgScrollView {
-                      Layout.fillWidth: true
-                      height: 100
-                      Column {
-                        Repeater {
-                          model: channel_identifier
-                          delegate:
-                              Row{
-                                AlgLabel {
-                                  text: modelData
-                                  Layout.preferredHeight: 35
-                                  width:120
-                                }
-                                AlgTextEdit {
-                                    Layout.fillWidth: true
-                                    text: modelData
-                                    Layout.preferredHeight: 35
-                                }
-                          }
+                    Layout.columnSpan: 2
+                    GridLayout{
+                        id: advanced_tab_layout
+                        anchors.topMargin: 10
+                        Layout.fillHeight: false
+                        Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                        Layout.fillWidth: true
+                        columns: 2
+                        columnSpacing: 10
+
+                        AlgCheckBox{
+                            id: enable_connection_CB
+                            text: "Create Shader In Maya"
                         }
 
-                      }
+                        RowLayout{
+                            AlgLabel{text:"Port"}
+                            AlgTextEdit{
+                                Layout.fillWidth: true
+                                id:port_TE
+                                text:"9001"
+                            }
+                        }
+
+                        RowLayout{
+                            Layout.columnSpan: 2
+                            Layout.fillWidth: true
+                            spacing:5
+
+                            AlgToolButton{
+                                Layout.fillHeight: true
+                                Layout.preferredWidth: 60
+                                iconName:"icons/sync.png"
+                                iconSize: Qt.size(30,30)
+                                //background: Rectangle {color: "transparent"}
+                                onClicked: {
+                                    dliang_sp_tools.prepForSync()
+                                }
+                            }
+                            GridLayout{
+                                columns:2
+                                AlgLabel{
+                                text:"Material Name"
+                                Layout.alignment: Qt.AlignRight
+                            }
+                                AlgTextEdit{
+                                id: material_name_TE
+                                Layout.fillWidth: true
+                                text:alg.project.name()+"_mat"
+                            }
+                                AlgLabel{
+                                text:"Renderer"
+                                Layout.alignment: Qt.AlignRight
+                            }
+                                AlgComboBox{
+                                id: create_maya_shader_CBB
+                                Layout.fillWidth: true
+                                model: ListModel {
+                                      id: create_maya_shader_LM
+                                      ListElement { text: "Arnold" }
+                                }
+                            }
+                            }
+                        }
+
+                        GridLayout{
+                                columns: 2
+                                Layout.columnSpan: 2
+                                Layout.fillWidth: true
+
+
+                                AlgLabel{text:"BaseColor"}
+                                AlgTextInput{
+                                   id: basecolor_TE
+                                   Layout.fillWidth: true
+                                   horizontalAlignment: TextInput.AlignRight
+                                }
+
+                                AlgLabel{text:"Metallic"}
+                                AlgTextInput{
+                                    id: metallic_TE
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: TextInput.AlignRight
+                                }
+
+                                AlgLabel{text:"Roughness"}
+                                AlgTextInput{
+                                    id: roughness_TE
+                                   Layout.fillWidth: true
+                                   horizontalAlignment: TextInput.AlignRight
+                                }
+
+                                AlgLabel{text:"Normal"}
+                                AlgTextInput{
+                                    id: normal_TE
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: TextInput.AlignRight
+                                }
+
+                                AlgLabel{text:"Displacement"}
+                                AlgTextInput{
+                                    id: displacement_TE
+                                    horizontalAlignment: TextInput.AlignRight
+                                    Layout.fillWidth: true}
+
+                                AlgLabel{text:"Emissive"}
+                                AlgTextInput{
+                                    id: emissive_TE
+                                    horizontalAlignment: TextInput.AlignRight
+                                    Layout.fillWidth: true}
+
+                                AlgLabel{text:"Opacity"}
+                                AlgTextInput{
+                                    id: opacity_TE
+                                    horizontalAlignment: TextInput.AlignRight
+                                    Layout.fillWidth: true}
+
+                                AlgLabel{text:"SSS_color"}
+                                AlgTextInput{
+                                    id: sss_color_TE
+                                    horizontalAlignment: TextInput.AlignRight
+                                    Layout.fillWidth: true}
+
+                                AlgLabel{text:"SSS_gain"}
+                                AlgTextInput{
+                                    id: sss_gain_TE
+                                    horizontalAlignment: TextInput.AlignRight
+                                    Layout.fillWidth: true}
+
+
+                            }
+
                     }
+
                 }
-                */
 
             }// end of stack layout
         }//end of alg tab bar
