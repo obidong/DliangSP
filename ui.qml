@@ -21,8 +21,8 @@ AlgButton {
     "Displacement":["isplacement","dsp","Dsp","disp","Disp","Height","height"],
     "Emissive":["Emissive","emissive","emission","Emission"],
     "Opacity":["pacity"],
-    "SSS_gain":["cattering"],
-    "SSS_color":["SSS_color"]
+    "Scattering":["cattering"],
+    "Transmissive":["ransmissive","ransparen"]
   }
   property bool loading: false
   property var fbxPath:null
@@ -113,7 +113,7 @@ AlgButton {
     title: "Dliang SP Tool Kit"
     visible: false
     width: 250
-    height: 460
+    height: 700
     minimumWidth: 300
     minimumHeight: 400
     flags: Qt.Window
@@ -341,6 +341,7 @@ AlgButton {
             return index === self.indexOf(elem);
         })
 
+        // fill preset tokens
         for (var index in unique_keys){
             var token = unique_keys[index]
             if (dliang_sp_tools.filterPreset(token,"BaseColor")){
@@ -357,10 +358,10 @@ AlgButton {
                 emissive_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }else if(dliang_sp_tools.filterPreset(token,"Opacity")){
                 opacity_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-            }else if(dliang_sp_tools.filterPreset(token,"SSS_color")){
-                sss_color_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-            }else if(dliang_sp_tools.filterPreset(token,"SSS_gain")){
-                sss_gain_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
+            }else if(dliang_sp_tools.filterPreset(token,"Transmissive")){
+                transmissive_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
+            }else if(dliang_sp_tools.filterPreset(token,"Scattering")){
+                scattering_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
             }
         }
 
@@ -373,8 +374,8 @@ AlgButton {
         displacement_TE.text=""
         emissive_TE.text = ""
         opacity_TE.text=""
-        sss_color_TE.text=""
-        sss_gain_TE.text=""
+        transmissive_TE.text=""
+        scattering_TE.text=""
 
         dliang_sp_tools.analyzingProject()
         // init
@@ -382,16 +383,29 @@ AlgButton {
 
     }
     function syncToMaya(export_log){
-        var keys = []
-        for(var textureset in export_log){
-            for(var p in export_log[textureset]){
-                keys.push(p)
-            }
-        }
 
-        var unique_keys = keys.filter(function(elem, index, self) {
-            return index === self.indexOf(elem);
-        })
+        var port = port_TE.text
+        var materialName = material_name_TE.text
+        var renderer = renderer_CBB.currentText
+        var channel_info ={}
+        var file_ext = export_format_CB.currentText.replace('"','\"')
+
+        if(renderer=="Arnold"){
+            channel_info.baseColor=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
+            channel_info.specularRoughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
+            channel_info.metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
+            channel_info.normalCamera=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
+            channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
+            channel_info.emission=(["outAlpha", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
+            channel_info.opacity=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
+            channel_info.transmissionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
+            channel_info.subsurface=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
+        }
+        alg.log.info(channel_info)
+        channel_info=(JSON.stringify(channel_info).replace('"','\"'))
+        alg.subprocess.check_output( ["python.exe", "connect_maya.py", port, materialName, channel_info, renderer,file_ext])
+
+
     }
 
     function exportTex(){
@@ -418,15 +432,13 @@ AlgButton {
 
         // export to maya
         if (enable_connection_CB.checked){
+            alg.log.info("=== connecting to Maya ===")
             dliang_sp_tools.syncToMaya()
-            alg.log.info("=== creating shader ===")
-            //alg.subprocess.check_output( ["python.exe", "connect_maya.py", params[6],params[0]])
             }
         else{
             return
         }
     }
-
     function filterPreset(token,identifier){
         for(var i in legal_strings[identifier]){
             if(token.includes(legal_strings[identifier][i])){
@@ -860,7 +872,7 @@ AlgButton {
                   background:Rectangle{
                     color: export_btn.hovered && !export_btn.loading ? "#696969" : "transparent"
                     border.width: 2
-                    border.color: "#c5c5c5"
+                    border.color: "#828282"
                     radius: 6
 
                   }
@@ -870,7 +882,7 @@ AlgButton {
                   }
 
                 Rectangle{
-                    color:"#c5c5c5"
+                    color:"#6d6d6d"
                     Layout.preferredHeight: 3
                     Layout.fillWidth: true
                     Layout.columnSpan: 2
@@ -943,7 +955,7 @@ AlgButton {
                                 Layout.alignment: Qt.AlignRight
                             }
                                 AlgComboBox{
-                                id: create_maya_shader_CBB
+                                id: renderer_CBB
                                 Layout.fillWidth: true
                                 model: ListModel {
                                       id: create_maya_shader_LM
@@ -1005,15 +1017,15 @@ AlgButton {
                                     horizontalAlignment: TextInput.AlignRight
                                     Layout.fillWidth: true}
 
-                                AlgLabel{text:"SSS_color"}
+                                AlgLabel{text:"Transmissive"}
                                 AlgTextInput{
-                                    id: sss_color_TE
+                                    id: transmissive_TE
                                     horizontalAlignment: TextInput.AlignRight
                                     Layout.fillWidth: true}
 
-                                AlgLabel{text:"SSS_gain"}
+                                AlgLabel{text:"Scattering"}
                                 AlgTextInput{
-                                    id: sss_gain_TE
+                                    id: scattering_TE
                                     horizontalAlignment: TextInput.AlignRight
                                     Layout.fillWidth: true}
 
@@ -1026,6 +1038,7 @@ AlgButton {
 
             }// end of stack layout
         }//end of alg tab bar
+
     } //end of main layout
   } // end of window
 }// end of button
