@@ -377,7 +377,7 @@ AlgButton {
                 channel_info.metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
                 channel_info.aiNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
                 channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-                channel_info.emission=(["outAlpha", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
+                channel_info.emissionColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
                 channel_info.opacity=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
                 channel_info.transmissionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
                 channel_info.subsurface=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
@@ -414,12 +414,17 @@ AlgButton {
                 channel_info.ss_amount=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
             }
 
-            channel_info=(JSON.stringify(channel_info).replace('"','\"'))
-            alg.subprocess.check_output( ["python.exe", "connect_maya.py", port, materialName, channel_info, renderer])
-            //alg.subprocess.check_output( ["test.exe", port, materialName, channel_info, renderer])
+            channel_info=(JSON.stringify(channel_info))
+            channel_info=dliang_sp_tools.replaceAll(channel_info,'"','\"')
+            alg.subprocess.check_output(["\""+alg.plugin_root_directory+"connect_maya.exe\"", port, materialName, channel_info, renderer])
 
             //for debug only
             //alg.log.info(["python.exe", "connect_maya.py", port, materialName, channel_info, renderer])
+        }
+        function replaceAll(str,replaced,replacement){
+            var reg=new RegExp(replaced,"g");
+            str=str.replace(reg,replacement);
+            return str;
         }
         function exportTex(){
             alg.log.info(" === exporting textures === ")
@@ -756,7 +761,7 @@ AlgButton {
                                 ListElement { text: "" }
                                 ListElement { text: "tif" }
                                 ListElement { text: "png" }
-                                ListElement { text: "jpeg" }
+                                ListElement { text: "jpg" }
                                 ListElement { text: "exr" }
                                 ListElement { text: "bmp" }
                                 ListElement { text: "tga" }
