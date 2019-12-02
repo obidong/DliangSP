@@ -416,6 +416,7 @@ AlgButton {
 
             channel_info=(JSON.stringify(channel_info).replace('"','\"'))
             alg.subprocess.check_output( ["python.exe", "connect_maya.py", port, materialName, channel_info, renderer])
+            //alg.subprocess.check_output( ["test.exe", port, materialName, channel_info, renderer])
 
             //for debug only
             //alg.log.info(["python.exe", "connect_maya.py", port, materialName, channel_info, renderer])
