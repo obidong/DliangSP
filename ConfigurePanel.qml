@@ -191,7 +191,7 @@ AlgDialog {
               ListElement { text: "gif" }
             }
             function reload() {
-              var format = alg.settings.value("export_format", "tif");
+              var format = alg.settings.value("format", "tif");
               for (var i = 0; i < formatModel.count; ++i) {
                 var current = formatModel.get(i);
                 if (format === current.text) {
@@ -228,7 +228,7 @@ AlgDialog {
               ListElement { key: "16 bits"; value: 16 }
             }
             function reload() {
-              var bitdepth = alg.settings.value("export_format", -1);
+              var bitdepth = alg.settings.value("bitDepth", -1);
               for (var i = 0; i < bitDepthModel.count; ++i) {
                 var current = bitDepthModel.get(i);
                 if (bitdepth === current.value) {

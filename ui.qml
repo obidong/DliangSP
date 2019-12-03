@@ -26,12 +26,8 @@ AlgButton {
     }
     property bool loading: false
     property var texture_set_list:null
-    property string preset_folder:alg.settings.value('export_preset_path')
     property string plugin_folder: alg.plugin_root_directory
-    property var project_tex_output_format: ""
-    property string project_tex_output_path: ""
-    property var project_output_textureset:[]
-    property var default_render_engine:""
+
     /*property var channel_identifier:[
       "ambientOcclusion",
       "anisotropylevel",
@@ -94,14 +90,9 @@ AlgButton {
     visible: false
     selectFolder: true
     onAccepted:{
-        preset_folder = export_preset_dialog.folder
+        var preset_folder = export_preset_dialog.folder
         export_preset_LM.folder = preset_folder
-        alg.log.info(preset_folder)
-        alg.settings.value('export_preset_path', preset_folder)
-        //var preset_json_path = alg.plugin_root_directory+"presets.json"
-        //var json_file = alg.fileIO.open(preset_json_path, 'w')
-        //json_file.write(preset_folder)
-        //json_file.close()
+        alg.project.settings.setValue('project_export_preset_path', preset_folder)
     }
   }
 
@@ -117,34 +108,48 @@ AlgButton {
           | Qt.WindowTitleHint
           | Qt.WindowSystemMenuHint
           | Qt.WindowMinMaxButtonsHint
-          | Qt.WindowCloseButtonHint // close button
+          | Qt.WindowCloseButtonHint
 
         // basic functions
         function initParams(){
-            // refresh output path
-            if(alg.project.settings.contains("output_path")){
-              project_tex_output_path = alg.project.settings.value("output_path")
-            }else{
-              project_tex_output_path =  "D:\\Please_Select_Output_Path"
-            }
-            // refresh output format
-            if(alg.project.settings.contains("output_format")){
-              project_tex_output_format = alg.project.settings.value("output_format")
-            }else{
-              project_tex_output_format =  alg.settings.value('format')
-            }
-            export_format_LE.get(0).text = project_tex_output_format
-
-            //refresh render engine
-            if(alg.project.settings.contains("render_engine")){
-              default_render_engine = alg.project.settings.value("default_render_engine")
-            }else{
-              default_render_engine = alg.settings.value('renderer')
-            }
-            create_maya_shader_LM.get(0).text = default_render_engine
 
             // refresh material name
-            material_name_TI.text = alg.project.name()+"_mat"
+            if(alg.project.settings.contains("material_name")){
+                material_name_TI.text = alg.project.settings.value("material_name")
+            }else{
+                material_name_TI.text = alg.project.name()+"_mat"
+            }
+
+            // refresh preset path
+            if(alg.project.settings.contains("project_export_preset_path")){
+              export_preset_LM.folder = alg.project.settings.value("project_export_preset_path")
+            }else{
+              export_preset_LM.folder = alg.fileIO.localFileToUrl(alg.settings.value("export_preset_path"))
+            }
+
+            // refresh output path
+            if(alg.project.settings.contains("output_path")){
+              output_dir_TE.text = alg.project.settings.value("output_path")
+            }else{
+              output_dir_TE.text =  "D:\\Please_Select_Output_Path"
+            }
+
+            // refresh output format
+            if(alg.project.settings.contains("output_format")){
+                export_format_LE.get(0).text = alg.project.settings.value("output_format")
+            }else{
+                export_format_LE.get(0).text =  alg.settings.value('format')
+            }
+
+            //refresh render engine
+            if(alg.project.settings.contains("project_renderer")){
+              create_maya_shader_LM.get(0).text = alg.project.settings.value("project_renderer")
+            }else{
+              create_maya_shader_LM.get(0).text = alg.settings.value('renderer')
+            }
+
+            // refresh port
+            maya_port_TI.text = alg.settings.value('default_maya_port')
           }
         function refreshInterface() {
           try {
@@ -156,49 +161,43 @@ AlgButton {
           }
           }
         function getSettings(){
-            // get parameters from UI
-            // save project settings based on UI element selections
-
-            // output texture sets
-            project_output_textureset = dliang_sp_tools.getSelectedSets()
-
-            // output texture folder
-            project_tex_output_path = output_dir_TE.text
-            alg.project.settings.setValue("output_path", project_tex_output_path)
-
-            // output format
-            project_tex_output_format = export_format_CB.currentText
-            alg.project.settings.setValue("output_format", project_tex_output_format)
-
-            // default render engine
-            default_render_engine = renderer_CBB.currentText
-            alg.project.settings.setValue("default_render_engine",default_render_engine)
-
-            // output preset
-            var out_preset = export_presets_CB.currentText.split(".")[0]
-
-            // resolution
-            var out_res
-            out_res = export_size_CB.currentText
-            if (out_res == "use original"){
-                out_res=null
+            // get parameters from UI and store in alg.project.settings when exporting textures.
+            var output_textureset = dliang_sp_tools.getSelectedSets()       // output texture sets
+            var output_path = output_dir_TE.text                            // output texture folder
+            var output_format = export_format_CB.currentText                // output format
+            var out_preset = export_presets_CB.currentText.split(".")[0]    // output preset
+            var output_res = export_size_CB.currentText                     // output resolution
+            if (output_res == "default size"){
+                output_res = null
             }else{
-                out_res=parseInt(out_res)
+                output_res=parseInt(out_res)
             }
-
-            // output texture depth
-            var out_depth
-            if(bit_depth_CB.currentText == "8 bit"){
-                out_depth = 8
+            var output_depth                                                // output depth
+            if(bit_depth_CB.currentText == "default depth"){
+                output_depth = null
+            }else if(bit_depth_CB.currentText == "8 bit"){
+                output_depth = 8
+            }else{
+                output_depth = 16
             }
-            else{
-                out_depth = 16
-            }
-
-            // port
             var port = maya_port_TI.text
-            return [out_preset, project_tex_output_path, project_tex_output_format, out_res, out_depth, project_output_textureset, port]
+
+            alg.project.settings.setValue("material_name", material_name_TI.text)
+            alg.project.settings.setValue("output_path", output_path)
+            alg.project.settings.setValue("output_format", output_format)
+            alg.project.settings.setValue("project_renderer",renderer_CBB.currentText)
+            return [out_preset, output_path, output_format, output_res, output_depth, output_textureset, port]
           }
+        function setPresetPath(){
+            export_preset_dialog.visible = true
+        }
+        function filterPreset(token,identifier){
+            for(var i in legal_strings[identifier]){
+                if(token.includes(legal_strings[identifier][i])){
+                    return true}
+            }
+            return false
+        }
 
         // utils functions
         function getTextureSetInfo(){
@@ -211,7 +210,6 @@ AlgButton {
           texture_set_list.sort()
           return texture_set_list
           }
-
         function getSelectedSets(){
             var selected_set=[]
             var i=0
@@ -234,6 +232,27 @@ AlgButton {
           // No API found for this feature yet - -...Adobe bu gei li a
           return
           }
+        // create new channel function
+        function addChannel(){
+          try{
+            var current_textureset = alg.texturesets.getActiveTextureSet()[0]
+            var current_slot = channels_CB.currentText
+            var channel_info = channel_info_CB.currentText
+            var texture_label = channel_name_txt.text
+            var i=0
+            for (i in texture_sets_SV.children){
+              if (texture_sets_SV.children[i].checked==true){
+                try{
+                    alg.texturesets.addChannel(texture_sets_SV.children[i].text, current_slot,channel_info,texture_label)
+                    }catch(err){alg.log.exception(err)}
+                }
+              }
+            }
+          catch(err){
+              alg.log.exception(err)
+            }
+        }
+        // set size and color profile functions
         function setSize(){
           var i=0
           var texture_set = dliang_sp_tools.getSelectedSets()
@@ -256,33 +275,11 @@ AlgButton {
                 }
             }
         }
-        function addChannel(){
-          try{
-            var current_textureset = alg.texturesets.getActiveTextureSet()[0]
-            var current_slot = channels_CB.currentText
-            var channel_info = channel_info_CB.currentText
-            var texture_label = channel_name_txt.text
-            var i=0
-            for (i in texture_sets_SV.children){
-              if (texture_sets_SV.children[i].checked==true){
-                try{
-                    alg.texturesets.addChannel(texture_sets_SV.children[i].text, current_slot,channel_info,texture_label)
-                    }catch(err){alg.log.exception(err)}
-                }
-              }
-            }
-          catch(err){
-              alg.log.exception(err)
-            }
-        }
-        function setPresetPath(){
-            export_preset_dialog.visible = true
-        }
+
 
         function analyzingProject(){
             alg.log.info(" === Analyzing Export Presets === ")
-            var params = getSettings()
-
+            var params = dliang_sp_tools.getSettings()
             var mesh_url = alg.project.lastImportedMeshUrl()
             var file_name = mesh_url.substring(mesh_url.lastIndexOf("/")+1).split(".")[0]
             var project_name = alg.project.name()
@@ -334,14 +331,6 @@ AlgButton {
             }
 
         }
-        function filterPreset(token,identifier){
-            for(var i in legal_strings[identifier]){
-                if(token.includes(legal_strings[identifier][i])){
-                    return true}
-            }
-            return false
-        }
-
         function prepForSync(){
             basecolor_TE.text=""
             metallic_TE.text=""
@@ -365,7 +354,6 @@ AlgButton {
             var renderer = renderer_CBB.currentText
             var channel_info ={}
             var file_ext = export_format_CB.currentText.replace('"','\"')
-
             if(renderer=="Arnold"){
                 channel_info.baseColor=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
                 channel_info.specularRoughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
@@ -434,15 +422,16 @@ AlgButton {
             6. port
             */
 
-            if (params[3]==null){
-                alg.log.info("use document size for export")
-                // save for checking
-                // var export_log=alg.mapexport.getPathsExportDocumentMaps(params[0], params[1], params[2],params[5])
+            if (params[3]==null && params[4]==null){
+                alg.log.info("use default document size and format")
+                var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {keepAlpha:false,bitDepth:null}, params[5])
+            }else if(params[3]==null){
                 var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
+            }else if(params[4]==null){
+                var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]]}, params[5])
             }else{
-                // save for checking
-                // var export_log=alg.mapexport.getPathsExportDocumentMaps(params[0], params[1], params[2],params[5])
                 var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
+
             }
 
             // connect to maya
@@ -771,7 +760,7 @@ AlgButton {
                           Layout.fillWidth: true
                           model: ListModel {
                                 id: export_size_LE
-                                ListElement { text: "use original" }
+                                ListElement { text: "default size" }
                                 ListElement { text: "128" }
                                 ListElement { text: "256" }
                                 ListElement { text: "512" }
@@ -787,6 +776,7 @@ AlgButton {
                           Layout.fillWidth: true
                           model: ListModel {
                                 id: bit_depth_LE
+                                ListElement { text: "default depth" }
                                 ListElement { text: "8 bit" }
                                 ListElement { text: "16 bit" }
                             }
@@ -808,7 +798,6 @@ AlgButton {
                                 currentIndex: 0
                                 FolderListModel{
                                     id:export_preset_LM
-                                    folder: alg.fileIO.localFileToUrl(preset_folder)
                                     showDirs:false
                                     nameFilters: ["*.spexp"]
                                 }
@@ -844,7 +833,7 @@ AlgButton {
                             AlgTextInput{
                                 id: output_dir_TE
                                 Layout.fillWidth: true
-                                text: project_tex_output_path}
+                            }
 
                             AlgButton {
                                 id: output_folder_btn
@@ -898,6 +887,7 @@ AlgButton {
                         }
                         // advance options
                         AlgGroupWidget{
+
                             text:"Export to Maya"
                             Layout.fillWidth: true
                             Layout.columnSpan: 2
