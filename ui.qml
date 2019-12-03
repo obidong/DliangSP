@@ -26,7 +26,7 @@ AlgButton {
     }
     property bool loading: false
     property var texture_set_list:null
-    property string preset_folder:alg.fileIO.open((alg.plugin_root_directory+"presets.json"), 'r').readAll()
+    property string preset_folder:alg.settings.value('export_preset_path')
     property string plugin_folder: alg.plugin_root_directory
     property var project_tex_output_format: ""
     property string project_tex_output_path: ""
@@ -96,10 +96,12 @@ AlgButton {
     onAccepted:{
         preset_folder = export_preset_dialog.folder
         export_preset_LM.folder = preset_folder
-        var preset_json_path = alg.plugin_root_directory+"presets.json"
-        var json_file = alg.fileIO.open(preset_json_path, 'w')
-        json_file.write(preset_folder)
-        json_file.close()
+        alg.log.info(preset_folder)
+        alg.settings.value('export_preset_path', preset_folder)
+        //var preset_json_path = alg.plugin_root_directory+"presets.json"
+        //var json_file = alg.fileIO.open(preset_json_path, 'w')
+        //json_file.write(preset_folder)
+        //json_file.close()
     }
   }
 
@@ -129,15 +131,17 @@ AlgButton {
             if(alg.project.settings.contains("output_format")){
               project_tex_output_format = alg.project.settings.value("output_format")
             }else{
-              project_tex_output_format =  "tif"
+              project_tex_output_format =  alg.settings.value('format')
             }
             export_format_LE.get(0).text = project_tex_output_format
+
             //refresh render engine
             if(alg.project.settings.contains("render_engine")){
               default_render_engine = alg.project.settings.value("default_render_engine")
             }else{
-              default_render_engine = "Arnold"
+              default_render_engine = alg.settings.value('renderer')
             }
+            create_maya_shader_LM.get(0).text = default_render_engine
 
             // refresh material name
             material_name_TI.text = alg.project.name()+"_mat"
@@ -207,16 +211,7 @@ AlgButton {
           texture_set_list.sort()
           return texture_set_list
           }
-        function getPresetFolder(){
-            var json_file
-            try{
-                var preset_file_path = alg.plugin_root_directory+"presets.json"
-                json_file = alg.fileIO.open(preset_file_path, 'r')
-            }catch(err){
-                alg.log.exception(err)
-            }
-            preset_folder = json_file.readAll()
-        }
+
         function getSelectedSets(){
             var selected_set=[]
             var i=0
@@ -446,7 +441,7 @@ AlgButton {
                 var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
             }else{
                 // save for checking
-                //var export_log=alg.mapexport.getPathsExportDocumentMaps(params[0], params[1], params[2],params[5])
+                // var export_log=alg.mapexport.getPathsExportDocumentMaps(params[0], params[1], params[2],params[5])
                 var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
             }
 
@@ -813,7 +808,7 @@ AlgButton {
                                 currentIndex: 0
                                 FolderListModel{
                                     id:export_preset_LM
-                                    folder: preset_folder
+                                    folder: alg.fileIO.localFileToUrl(preset_folder)
                                     showDirs:false
                                     nameFilters: ["*.spexp"]
                                 }
@@ -934,7 +929,7 @@ AlgButton {
                                     AlgTextInput{
                                         Layout.fillWidth: true
                                         id:maya_port_TI
-                                        text:"9001"
+                                        text:alg.settings.value('default_maya_port')
                                     }
                                 }
 
@@ -973,6 +968,7 @@ AlgButton {
                                         Layout.fillWidth: true
                                         model: ListModel {
                                               id: create_maya_shader_LM
+                                              ListElement { text: "" }
                                               ListElement { text: "Arnold" }
                                               ListElement { text: "Vray" }
                                               ListElement { text: "Renderman_PxrDisney" }

@@ -24,8 +24,7 @@ PainterPlugin {
         }
 
         onConfigure: {
-                // Do something when the user request the plugin configuration panel
-                alg.log.info("onConfigure")
+            configurePanel.open()
         }
 
         onApplicationStarted: {
@@ -56,6 +55,15 @@ PainterPlugin {
         onProjectSaved: {
                 // Called after the project was saved
                 alg.log.info("onProjectSaved")
+
+
         }
+
+        ConfigurePanel {
+          id: configurePanel
+        }
+
 }
+
+
 
