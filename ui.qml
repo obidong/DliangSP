@@ -1,3 +1,7 @@
+// Substance Painter Toolkit 1.0
+// Copyright (C) 2019 Liang Dong
+
+
 import QtQuick 2.3
 import QtQuick.Window 2.2
 import QtQuick.Layouts 1.3
@@ -27,7 +31,6 @@ AlgButton {
     property bool loading: false
     property var texture_set_list:null
     property string plugin_folder: alg.plugin_root_directory
-
     /*property var channel_identifier:[
       "ambientOcclusion",
       "anisotropylevel",
@@ -112,7 +115,6 @@ AlgButton {
 
         // basic functions
         function initParams(){
-
             // refresh material name
             if(alg.project.settings.contains("material_name")){
                 material_name_TI.text = alg.project.settings.value("material_name")
@@ -170,12 +172,10 @@ AlgButton {
             if (output_res == "default size"){
                 output_res = null
             }else{
-                output_res=parseInt(out_res)
+                output_res=parseInt(output_res)
             }
             var output_depth                                                // output depth
-            if(bit_depth_CB.currentText == "default depth"){
-                output_depth = null
-            }else if(bit_depth_CB.currentText == "8 bit"){
+            if(bit_depth_CB.currentText == "8 bit"){
                 output_depth = 8
             }else{
                 output_depth = 16
@@ -422,13 +422,8 @@ AlgButton {
             6. port
             */
 
-            if (params[3]==null && params[4]==null){
-                alg.log.info("use default document size and format")
-                var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {keepAlpha:false,bitDepth:null}, params[5])
-            }else if(params[3]==null){
+            if (params[3]==null){
                 var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
-            }else if(params[4]==null){
-                var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]]}, params[5])
             }else{
                 var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
 
@@ -476,7 +471,7 @@ AlgButton {
                       }
                     }
                   ]
-              }
+            }
 
             AlgButton{
               id: select_all_btn
@@ -524,13 +519,15 @@ AlgButton {
                     width:children.width
                     activeCloseButton:null
                   }
+                /*
                 AlgTabButton {
                     id: advanced_tab_btn
                     text: "Advanced"
                     width:children.width
                     activeCloseButton:null
                   }
-              }
+                */
+            }
 
             StackLayout{
                     anchors.topMargin: 10
@@ -776,7 +773,6 @@ AlgButton {
                           Layout.fillWidth: true
                           model: ListModel {
                                 id: bit_depth_LE
-                                ListElement { text: "default depth" }
                                 ListElement { text: "8 bit" }
                                 ListElement { text: "16 bit" }
                             }
@@ -968,72 +964,223 @@ AlgButton {
                                     }
                                 }
 
-                                GridLayout{
-                                        columns: 2
+                                // layout with ScrollBar, save for future.
+                                /*
+                                RowLayout{
+                                    Layout.columnSpan: 2
+                                    Layout.fillWidth: true
+                                    Layout.minimumHeight: 150
+                                    spacing:1
+                                    Rectangle {
+                                      id: content
+                                      Layout.columnSpan: 2
+                                      anchors.fill: parent
+                                      anchors.margins: 1
+                                      Layout.fillWidth: true
+                                      //clip: true
+                                      color: "transparent"
+                                      AlgScrollView {
+                                        id: scrollView
                                         Layout.columnSpan: 2
-                                        Layout.fillWidth: true
+                                        anchors.fill: parent
+                                        anchors.margins: 1
 
+                                    GridLayout{
+                                        columns: 3
+                                        //width: scrollView.width-15
+                                        Layout.minimumWidth: scrollView.width-15
+                                        columnSpacing: 3
+                                        rowSpacing: 1
+                                        //Layout.fillWidth: true
 
                                         AlgLabel{text:"BaseColor"}
                                         AlgTextInput{
                                            id: basecolor_TE
                                            Layout.fillWidth: true
-                                           horizontalAlignment: TextInput.AlignRight
                                         }
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
+                                        }
+
 
                                         AlgLabel{text:"Metallic"}
                                         AlgTextInput{
                                             id: metallic_TE
                                             Layout.fillWidth: true
-                                            horizontalAlignment: TextInput.AlignRight
+
+                                        }
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
                                         }
 
                                         AlgLabel{text:"Roughness"}
                                         AlgTextInput{
                                             id: roughness_TE
                                            Layout.fillWidth: true
-                                           horizontalAlignment: TextInput.AlignRight
+
+                                        }
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
                                         }
 
                                         AlgLabel{text:"Normal"}
                                         AlgTextInput{
                                             id: normal_TE
                                             Layout.fillWidth: true
-                                            horizontalAlignment: TextInput.AlignRight
+
+                                        }
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
                                         }
 
                                         AlgLabel{text:"Displacement"}
                                         AlgTextInput{
                                             id: displacement_TE
-                                            horizontalAlignment: TextInput.AlignRight
                                             Layout.fillWidth: true}
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
+                                        }
 
                                         AlgLabel{text:"Emissive"}
                                         AlgTextInput{
                                             id: emissive_TE
-                                            horizontalAlignment: TextInput.AlignRight
                                             Layout.fillWidth: true}
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
+
+                                        }
 
                                         AlgLabel{text:"Opacity"}
                                         AlgTextInput{
                                             id: opacity_TE
-                                            horizontalAlignment: TextInput.AlignRight
                                             Layout.fillWidth: true}
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
+                                        }
 
                                         AlgLabel{text:"Transmissive"}
                                         AlgTextInput{
                                             id: transmissive_TE
-                                            horizontalAlignment: TextInput.AlignRight
                                             Layout.fillWidth: true}
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
+                                        }
 
                                         AlgLabel{text:"Scattering"}
                                         AlgTextInput{
                                             id: scattering_TE
-                                            horizontalAlignment: TextInput.AlignRight
                                             Layout.fillWidth: true}
-
+                                        AlgToolButton{
+                                            iconName:"icons/close.png"
+                                        }
 
                                     }
+                                      }
+
+                                }
+                                }
+                                */
+
+                                GridLayout{
+                                    columns: 3
+                                    //width: scrollView.width-15
+                                    Layout.fillWidth: true
+                                    Layout.columnSpan: 2
+                                    columnSpacing: 3
+                                    rowSpacing: 0
+                                    //Layout.fillWidth: true
+
+                                    AlgLabel{text:"BaseColor"}
+                                    AlgTextInput{
+                                       id: basecolor_TE
+                                       Layout.fillWidth: true
+                                    }
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {basecolor_TE.text=""}
+                                    }
+
+
+                                    AlgLabel{text:"Metallic"}
+                                    AlgTextInput{
+                                        id: metallic_TE
+                                        Layout.fillWidth: true
+                                    }
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {metallic_TE.text=""}
+                                    }
+
+                                    AlgLabel{text:"Roughness"}
+                                    AlgTextInput{
+                                        id: roughness_TE
+                                       Layout.fillWidth: true
+
+                                    }
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {roughness_TE.text=""}
+                                    }
+
+                                    AlgLabel{text:"Normal"}
+                                    AlgTextInput{
+                                        id: normal_TE
+                                        Layout.fillWidth: true
+
+                                    }
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {normal_TE.text=""}
+                                    }
+
+                                    AlgLabel{text:"Displacement"}
+                                    AlgTextInput{
+                                        id: displacement_TE
+                                        Layout.fillWidth: true}
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {displacement_TE.text=""}
+                                    }
+
+                                    AlgLabel{text:"Emissive"}
+                                    AlgTextInput{
+                                        id: emissive_TE
+                                        Layout.fillWidth: true}
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {emissive_TE.text=""}
+
+                                    }
+
+                                    AlgLabel{text:"Opacity"}
+                                    AlgTextInput{
+                                        id: opacity_TE
+                                        Layout.fillWidth: true}
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {opacity_TE.text=""}
+                                    }
+
+                                    AlgLabel{text:"Transmissive"}
+                                    AlgTextInput{
+                                        id: transmissive_TE
+                                        Layout.fillWidth: true}
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {transmissive_TE.text=""}
+                                    }
+
+                                    AlgLabel{text:"Scattering"}
+                                    AlgTextInput{
+                                        id: scattering_TE
+                                        Layout.fillWidth: true}
+                                    AlgToolButton{
+                                        iconName:"icons/close.png"
+                                        onClicked: {scattering_TE.text=""}
+                                    }
+
+                                }
+
 
                             }
 
@@ -1043,5 +1190,5 @@ AlgButton {
             }
 
         }//end of main layout
-    } // end of window
-}// end of button
+    }
+}

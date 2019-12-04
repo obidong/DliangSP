@@ -1,3 +1,7 @@
+// Substance Painter Toolkit 1.0
+// Copyright (C) 2019 Liang Dong
+
+
 import QtQuick.Dialogs 1.0
 import QtQuick 2.2
 import Painter 1.0
@@ -24,7 +28,7 @@ PainterPlugin {
         }
 
         onConfigure: {
-            configurePanel.open()
+            configureDialog.open()
         }
 
         onApplicationStarted: {
@@ -60,7 +64,7 @@ PainterPlugin {
         }
 
         ConfigurePanel {
-          id: configurePanel
+          id: configureDialog
         }
 
 }

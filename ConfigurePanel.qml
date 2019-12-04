@@ -1,7 +1,6 @@
-// Copyright (C) 2016 Allegorithmic
-//
-// This software may be modified and distributed under the terms
-// of the MIT license.  See the LICENSE file for details.
+// Substance Painter Toolkit 1.0
+// Copyright (C) 2019 Liang Dong
+
 
 import QtQuick 2.3
 import QtQuick.Window 2.2
@@ -35,8 +34,6 @@ AlgDialog {
         var format_index = formatComboBox.currentIndex
         alg.settings.setValue("format", formatModel.get(format_index).text);
 
-        var depth_index = bitDepthComboBox.currentIndex
-        alg.settings.setValue("bitDepth", bitDepthModel.get(depth_index).value);
 
   }
 
@@ -53,7 +50,6 @@ AlgDialog {
       mayaPortTextInput.reload()
       rendererComboBox.reload()
       formatComboBox.reload()
-      bitDepthComboBox.reload()
     }
 
     AlgScrollView {
@@ -195,43 +191,6 @@ AlgDialog {
               for (var i = 0; i < formatModel.count; ++i) {
                 var current = formatModel.get(i);
                 if (format === current.text) {
-                  currentIndex = i;
-                  break
-                }
-              }
-            }
-            Component.onCompleted: {
-              reload()
-            }
-          }
-        }
-
-
-        RowLayout {
-          spacing: 6
-          Layout.fillWidth: true
-
-          AlgLabel {
-            text: "Export bitdepth"
-            Layout.fillWidth: true
-          }
-
-          AlgComboBox {
-            id: bitDepthComboBox
-            textRole: "key"
-            Layout.minimumWidth: 150
-
-            model: ListModel {
-              id: bitDepthModel
-              ListElement { key: "TextureSet value"; value: -1 }
-              ListElement { key: "8 bits"; value: 8 }
-              ListElement { key: "16 bits"; value: 16 }
-            }
-            function reload() {
-              var bitdepth = alg.settings.value("bitDepth", -1);
-              for (var i = 0; i < bitDepthModel.count; ++i) {
-                var current = bitDepthModel.get(i);
-                if (bitdepth === current.value) {
                   currentIndex = i;
                   break
                 }
