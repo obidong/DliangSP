@@ -31,6 +31,7 @@ AlgButton {
     property bool loading: false
     property var texture_set_list:null
     property string plugin_folder: alg.plugin_root_directory
+    property string preset_folder: ""
     /*property var channel_identifier:[
       "ambientOcclusion",
       "anisotropylevel",
@@ -93,8 +94,9 @@ AlgButton {
     visible: false
     selectFolder: true
     onAccepted:{
-        var preset_folder = export_preset_dialog.folder
-        export_preset_LM.folder = preset_folder
+        var get_folder = export_preset_dialog.folder
+        export_preset_LM.folder = get_folder
+        preset_folder = alg.fileIO.urlToLocalFile(get_folder)
         alg.project.settings.setValue('project_export_preset_path', preset_folder)
     }
   }
@@ -106,7 +108,7 @@ AlgButton {
         width: 250
         height: 700
         minimumWidth: 300
-        minimumHeight: 400
+        minimumHeight: 600
         flags: Qt.Window
           | Qt.WindowTitleHint
           | Qt.WindowSystemMenuHint
@@ -124,11 +126,14 @@ AlgButton {
 
             // refresh preset path
             if(alg.project.settings.contains("project_export_preset_path")){
-              export_preset_LM.folder = alg.project.settings.value("project_export_preset_path")
+              export_preset_LM.folder = alg.fileIO.localFileToUrl(alg.project.settings.value("project_export_preset_path"))
+              preset_folder = alg.project.settings.value("project_export_preset_path")
             }else if(alg.settings.contains('export_preset_path')){
               export_preset_LM.folder = alg.fileIO.localFileToUrl(alg.settings.value("export_preset_path"))
+              preset_folder = alg.project.settings.value("export_preset_path")
             }else{
-                export_preset_LM.folder = alg.fileIO.localFileToUrl(plugin_folder+"export-presets")
+                preset_folder = plugin_folder+"export-presets"
+                export_preset_LM.folder = alg.fileIO.localFileToUrl(preset_folder)
             }
 
 
@@ -136,7 +141,7 @@ AlgButton {
             if(alg.project.settings.contains("output_path")){
               output_dir_TE.text = alg.project.settings.value("output_path")
             }else{
-              output_dir_TE.text =  "D:\\Please_Select_Output_Path"
+              output_dir_TE.text =  "..."
             }
 
             // refresh output format
@@ -170,7 +175,7 @@ AlgButton {
             var output_textureset = dliang_sp_tools.getSelectedSets()       // output texture sets
             var output_path = output_dir_TE.text                            // output texture folder
             var output_format = export_format_CB.currentText                // output format
-            var out_preset = export_presets_CB.currentText.split(".")[0]    // output preset
+            var out_preset = preset_folder +"/"+ export_presets_CB.currentText                // output preset
             var output_res = export_size_CB.currentText                     // output resolution
             if (output_res == "default size"){
                 output_res = null
@@ -255,13 +260,6 @@ AlgButton {
               alg.log.exception(err)
             }
         }
-        function updateProject(){
-            if (alg.settings.contains("mesh_path")){
-                var mesh_path = alg.settings.value("mesh_path")
-            }else{
-                var mesh_path = "C:/temp/sp_export"
-            }
-        }
         // set size and color profile functions
         function setSize(){
           var i=0
@@ -285,8 +283,6 @@ AlgButton {
                 }
             }
         }
-
-
         function analyzingProject(){
             alg.log.info(" === Analyzing Export Presets === ")
             var params = dliang_sp_tools.getSettings()
@@ -410,9 +406,6 @@ AlgButton {
             channel_info=(JSON.stringify(channel_info))
             channel_info=dliang_sp_tools.replaceAll(channel_info,'"','\"')
             alg.subprocess.check_output(["\""+alg.plugin_root_directory+"connect_maya.exe\"", port, materialName, channel_info, renderer])
-
-            //for debug only
-            //alg.log.info(["python.exe", "connect_maya.py", port, materialName, channel_info, renderer])
         }
         function replaceAll(str,replaced,replacement){
             var reg=new RegExp(replaced,"g");
@@ -458,14 +451,6 @@ AlgButton {
             anchors.leftMargin:5
             anchors.bottomMargin:5
             anchors.fill:parent
-            AlgToolButton{
-                id: create_project_TB
-                iconName: "icons/load_tool_on.png"
-                iconSize:Qt.size(48,48)
-                onClicked:{
-                    dliang_sp_tools.updateProject()
-                }
-            }
 
             AlgLabel {
               id: texture_sets_label
@@ -946,7 +931,7 @@ AlgButton {
                                         Layout.fillHeight: true
                                         Layout.preferredWidth: 60
                                         iconName:"icons/sync.png"
-                                        iconSize: Qt.size(30,30)
+                                        iconSize: Qt.size(45,36)
                                         //background: Rectangle {color: "transparent"}
                                         onClicked: {
                                             dliang_sp_tools.prepForSync()
@@ -983,12 +968,11 @@ AlgButton {
                                 }
 
                                 // layout with ScrollBar, save for future.
-                                /*
                                 RowLayout{
                                     Layout.columnSpan: 2
                                     Layout.fillWidth: true
                                     Layout.minimumHeight: 150
-                                    spacing:1
+                                    spacing:0
                                     Rectangle {
                                       id: content
                                       Layout.columnSpan: 2
@@ -1002,14 +986,11 @@ AlgButton {
                                         Layout.columnSpan: 2
                                         anchors.fill: parent
                                         anchors.margins: 1
-
                                     GridLayout{
                                         columns: 3
-                                        //width: scrollView.width-15
                                         Layout.minimumWidth: scrollView.width-15
                                         columnSpacing: 3
-                                        rowSpacing: 1
-                                        //Layout.fillWidth: true
+                                        rowSpacing: 0
 
                                         AlgLabel{text:"BaseColor"}
                                         AlgTextInput{
@@ -1018,6 +999,7 @@ AlgButton {
                                         }
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {basecolor_TE.text=""}
                                         }
 
 
@@ -1029,6 +1011,7 @@ AlgButton {
                                         }
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {metallic_TE.text=""}
                                         }
 
                                         AlgLabel{text:"Roughness"}
@@ -1039,6 +1022,7 @@ AlgButton {
                                         }
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {roughness_TE.text=""}
                                         }
 
                                         AlgLabel{text:"Normal"}
@@ -1049,6 +1033,7 @@ AlgButton {
                                         }
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {normal_TE.text=""}
                                         }
 
                                         AlgLabel{text:"Displacement"}
@@ -1057,6 +1042,7 @@ AlgButton {
                                             Layout.fillWidth: true}
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {displacement_TE.text=""}
                                         }
 
                                         AlgLabel{text:"Emissive"}
@@ -1065,6 +1051,7 @@ AlgButton {
                                             Layout.fillWidth: true}
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {emissive_TE.text=""}
 
                                         }
 
@@ -1074,6 +1061,7 @@ AlgButton {
                                             Layout.fillWidth: true}
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {opacity_TE.text=""}
                                         }
 
                                         AlgLabel{text:"Transmissive"}
@@ -1082,6 +1070,7 @@ AlgButton {
                                             Layout.fillWidth: true}
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {transmissive_TE.text=""}
                                         }
 
                                         AlgLabel{text:"Scattering"}
@@ -1090,15 +1079,17 @@ AlgButton {
                                             Layout.fillWidth: true}
                                         AlgToolButton{
                                             iconName:"icons/close.png"
+                                            onClicked: {scattering_TE.text=""}
                                         }
 
-                                    }
                                       }
+                                    }
 
                                 }
                                 }
-                                */
 
+
+                                /*
                                 GridLayout{
                                     columns: 3
                                     //width: scrollView.width-15
@@ -1198,7 +1189,7 @@ AlgButton {
                                     }
 
                                 }
-
+                                */
 
                             }
 
