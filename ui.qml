@@ -18,14 +18,14 @@ AlgButton {
     tooltip: "Launch Dliang Substance Painter Toolkit UI"
 
     property var legal_strings: {
-    "BaseColor":["aseColor","iffuse","Dif","dif","lebedo"],
-    "Roughness":["oughness","spcrgh","Spcrgh"],
+    "BaseColor":["aseCol","asecol","iffuse","Dif","dif","lebedo","ase_col","ase_Col","ase col"],
+    "Roughness":["oughness","pcrgh","pecRough","pecrough","spc_rgh","spec_rough","pec rough","spc rough"],
     "Normal":["ormal","nml","nor"],
     "Metallic":["etallic","etalness","metal","Metal"],
     "Displacement":["isplacement","dsp","Dsp","disp","Disp","Height","height"],
     "Emissive":["Emissive","emissive","emission","Emission"],
-    "Opacity":["pacity"],
-    "Scattering":["cattering",],
+    "Opacity":["pacity","persen"],
+    "Scattering":["cattering","sss","SSS"],
     "Transmissive":["ransmissive","ransparen","efraction"]
     }
     property bool loading: false
@@ -125,9 +125,12 @@ AlgButton {
             // refresh preset path
             if(alg.project.settings.contains("project_export_preset_path")){
               export_preset_LM.folder = alg.project.settings.value("project_export_preset_path")
-            }else{
+            }else if(alg.settings.contains('export_preset_path')){
               export_preset_LM.folder = alg.fileIO.localFileToUrl(alg.settings.value("export_preset_path"))
+            }else{
+                export_preset_LM.folder = alg.fileIO.localFileToUrl(plugin_folder+"export-presets")
             }
+
 
             // refresh output path
             if(alg.project.settings.contains("output_path")){
@@ -250,6 +253,13 @@ AlgButton {
             }
           catch(err){
               alg.log.exception(err)
+            }
+        }
+        function updateProject(){
+            if (alg.settings.contains("mesh_path")){
+                var mesh_path = alg.settings.value("mesh_path")
+            }else{
+                var mesh_path = "C:/temp/sp_export"
             }
         }
         // set size and color profile functions
@@ -448,6 +458,14 @@ AlgButton {
             anchors.leftMargin:5
             anchors.bottomMargin:5
             anchors.fill:parent
+            AlgToolButton{
+                id: create_project_TB
+                iconName: "icons/load_tool_on.png"
+                iconSize:Qt.size(48,48)
+                onClicked:{
+                    dliang_sp_tools.updateProject()
+                }
+            }
 
             AlgLabel {
               id: texture_sets_label
