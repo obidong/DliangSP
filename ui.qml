@@ -18,7 +18,7 @@ AlgButton {
     tooltip: "Launch Dliang Substance Painter Toolkit UI"
 
     property var legal_strings: {
-    "BaseColor":["aseCol","asecol","iffuse","Dif","dif","lebedo","ase_col","ase_Col","ase col"],
+    "BaseColor":["aseCol","asecol","iffuse","Dif","dif","lebedo","ase_col","ase_Col","ase col","difCol","DifCol"],
     "Roughness":["oughness","pcrgh","pecRough","pecrough","spc_rgh","spec_rough","pec rough","spc rough"],
     "Normal":["ormal","nml","nor"],
     "Metallic":["etallic","etalness","metal","Metal"],
