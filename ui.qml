@@ -31,7 +31,7 @@ AlgButton {
     property bool loading: false
     property var texture_set_list:null
     property string plugin_folder: alg.plugin_root_directory
-    property string preset_folder: ""
+    property var preset_folder: null
     /*property var channel_identifier:[
       "ambientOcclusion",
       "anisotropylevel",
@@ -128,9 +128,9 @@ AlgButton {
             if(alg.project.settings.contains("project_export_preset_path")){
               export_preset_LM.folder = alg.fileIO.localFileToUrl(alg.project.settings.value("project_export_preset_path"))
               preset_folder = alg.project.settings.value("project_export_preset_path")
-            }else if(alg.settings.contains('export_preset_path')){
+            }else if(alg.settings.contains("export_preset_path")){
               export_preset_LM.folder = alg.fileIO.localFileToUrl(alg.settings.value("export_preset_path"))
-              preset_folder = alg.project.settings.value("export_preset_path")
+              preset_folder = alg.settings.value("export_preset_path")
             }else{
                 preset_folder = plugin_folder+"export-presets"
                 export_preset_LM.folder = alg.fileIO.localFileToUrl(preset_folder)
