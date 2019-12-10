@@ -244,7 +244,10 @@ AlgDialog {
                     Layout.columnSpan: 3
                     AlgLabel{text:modelData
                     Layout.minimumWidth: 100}
-                    AlgTextInput{Layout.minimumWidth: 200}
+                    AlgTextInput{
+                        Layout.minimumWidth: 200
+                        text:alg.settings.value(modelData)
+                    }
                 }
 
             }

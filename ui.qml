@@ -29,12 +29,24 @@ AlgButton {
     "Transmissive":["ransmissive","ransparen","efraction"]
     }
     property bool loading: false
-    property var texture_set_list:null
+    property var texture_set_list:[]
     property string plugin_folder: alg.plugin_root_directory
     property var preset_folder: null
     property var project_name: null
     property var mesh_name: null
     property var channel_name: null
+    property var document: null
+    property var channel_list: []
+    property var export_chan_list:[]
+    property var output_channels:({})
+    property var output_path:""
+    property var output_format:""
+    property var output_res:""
+    property var output_depth:""
+    property var output_textureset:[]
+    property var output_name:""
+    property var port:""
+
     /*property var channel_identifier:[
       "ambientOcclusion",
       "anisotropylevel",
@@ -91,19 +103,37 @@ AlgButton {
   }
 
     FileDialog  {
-    id: export_preset_dialog
+    id: dialog_export_preset
     width: 300
     height: 60
     visible: false
     selectFolder: true
     onAccepted:{
-        var get_folder = export_preset_dialog.folder
-        export_preset_LM.folder = get_folder
+        var get_folder = dialog_export_preset.folder
+        listmodel_export_preset.folder = get_folder
         preset_folder = alg.fileIO.urlToLocalFile(get_folder)
         alg.project.settings.setValue('project_export_preset_path', preset_folder)
     }
   }
 
+    AlgDialog  {
+        id: dialog_export_confirmation
+        width: 300
+        height: 160
+        defaultButtonText: "Export"
+        visible: false
+        ColumnLayout{
+            anchors.fill: parent
+            AlgLabel{
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                id:label_export_information
+            }
+        }
+
+        onAccepted:{
+            dliang_sp_tools.exportTex()
+        }
+    }
     AlgWindow{
         id: dliang_sp_tools
         title: "Dliang SP Toolkit"
@@ -120,9 +150,28 @@ AlgButton {
 
         // basic functions
         function initParams(){
+            //init UI
+            channel_list = []
+            alg.log.info(alg.mapexport.documentStructure())
+            // gether project information
             project_name = alg.project.name()
             var mesh_url = alg.project.lastImportedMeshUrl()
             mesh_name = mesh_url.substring(mesh_url.lastIndexOf("/")+1).split(".")[0]
+            document = alg.mapexport.documentStructure()
+            for (var i in document.materials){
+              texture_set_list.push(document.materials[i].name)
+              for(var j in document.materials[i].stacks[0].channels){
+                if (document.materials[i].stacks[0].channels[j] in channel_list != true){
+                    channel_list.push(document.materials[i].stacks[0].channels[j])
+                }
+              }
+            }
+            texture_set_list.sort()
+            channel_list = channel_list.filter(function(elem, index, self) {
+                return index === self.indexOf(elem);
+            })
+            channel_list.sort()
+            repeater_export_channel_list.model = channel_list
 
             // refresh material name
             if(alg.project.settings.contains("material_name")){
@@ -133,14 +182,14 @@ AlgButton {
 
             // refresh preset path
             if(alg.project.settings.contains("project_export_preset_path")){
-              export_preset_LM.folder = alg.fileIO.localFileToUrl(alg.project.settings.value("project_export_preset_path"))
+              listmodel_export_preset.folder = alg.fileIO.localFileToUrl(alg.project.settings.value("project_export_preset_path"))
               preset_folder = alg.project.settings.value("project_export_preset_path")
             }else if(alg.settings.contains("export_preset_path")){
-              export_preset_LM.folder = alg.fileIO.localFileToUrl(alg.settings.value("export_preset_path"))
+              listmodel_export_preset.folder = alg.fileIO.localFileToUrl(alg.settings.value("export_preset_path"))
               preset_folder = alg.settings.value("export_preset_path")
             }else{
                 preset_folder = plugin_folder+"export-presets"
-                export_preset_LM.folder = alg.fileIO.localFileToUrl(preset_folder)
+                listmodel_export_preset.folder = alg.fileIO.localFileToUrl(preset_folder)
             }
 
 
@@ -153,9 +202,9 @@ AlgButton {
 
             // refresh file name format
             if(alg.project.settings.contains("file_name_format")){
-              file_name_TI.text = alg.project.settings.value("file_name_format")
+              textinput_file_name.text = alg.project.settings.value("file_name_format")
             }else{
-              file_name_TI.text =  "$mesh_$channel.$textureSet"
+              textinput_file_name.text =  "$mesh_$channel.$textureSet"
             }
 
             // refresh output format
@@ -164,9 +213,6 @@ AlgButton {
             }else{
                 export_format_LE.get(0).text =  alg.settings.value('format')
             }
-
-            // refresh out file full path
-            dliang_sp_tools.updateFullPath()
 
             //refresh render engine
             if(alg.project.settings.contains("project_renderer")){
@@ -177,7 +223,7 @@ AlgButton {
 
             // refresh port
             maya_port_TI.text = alg.settings.value('default_maya_port')
-          }
+        }
         function refreshInterface() {
           try {
             if (!dliang_sp_tools.visible) {
@@ -186,35 +232,41 @@ AlgButton {
           } catch(err) {
             alg.log.exception(err)
           }
-          }
-        function getSettings(){
+        }
+        function getSettingsFromUI(){
             // get parameters from UI and store in alg.project.settings when exporting textures.
-            var output_textureset = dliang_sp_tools.getSelectedSets()       // output texture sets
-            var output_path = output_dir_TE.text                            // output texture folder
-            var output_format = export_format_CB.currentText                // output format
-            var out_preset = preset_folder +"/"+ export_presets_CB.currentText                // output preset
-            var output_res = export_size_CB.currentText                     // output resolution
+            output_channels = {}
+            output_textureset = dliang_sp_tools.getSelectedSets()       // output texture sets
+            output_path = output_dir_TE.text                            // output texture folder
+            output_name = textinput_file_name.text                      // output texture file name structure
+            output_format = export_format_CB.currentText                // output extension
+            output_res = export_size_CB.currentText                     // output resolution
             if (output_res == "default size"){
                 output_res = null
             }else{
                 output_res=parseInt(output_res)
             }
-            var output_depth                                                // output depth
+                                                                        // output depth
             if(bit_depth_CB.currentText == "8 bit"){
                 output_depth = 8
             }else{
                 output_depth = 16
             }
-            var port = maya_port_TI.text
+            port = maya_port_TI.text
+
+            for(var i=0; i < repeater_export_channel_list.count; i++){
+                if (repeater_export_channel_list.itemAt(i).children[0].checked){
+                    output_channels[repeater_export_channel_list.itemAt(i).children[0].text]=repeater_export_channel_list.itemAt(i).children[1].text
+                }
+            }
 
             alg.project.settings.setValue("material_name", material_name_TI.text)
             alg.project.settings.setValue("output_path", output_path)
             alg.project.settings.setValue("output_format", output_format)
             alg.project.settings.setValue("project_renderer",renderer_CBB.currentText)
-            return [out_preset, output_path, output_format, output_res, output_depth, output_textureset, port]
-          }
+        }
         function setPresetPath(){
-            export_preset_dialog.visible = true
+            dialog_export_preset.visible = true
         }
         function filterPreset(token,identifier){
             for(var i in legal_strings[identifier]){
@@ -225,10 +277,6 @@ AlgButton {
         }
 
         // utils functions
-        function updateFullPath(){
-            file_full_path_TI.text =  output_dir_TE.text+"/"+file_name_TI.text.replace("$project",project_name).replace("$mesh",mesh_name)+"." +  export_format_CB.currentText
-
-        }
         function getTextureSetInfo(){
           var doc_info = alg.mapexport.documentStructure()
           var i = 0
@@ -238,7 +286,7 @@ AlgButton {
           }
           texture_set_list.sort()
           return texture_set_list
-          }
+        }
         function getSelectedSets(){
             var selected_set=[]
             var i=0
@@ -248,19 +296,24 @@ AlgButton {
               }
             }
             return selected_set
-            }
-        function selectCheckbox(state){
+        }
+        function textureSetCheckbox(state){
           var i=0
           for (i in texture_sets_SV.children){
             try{
               texture_sets_SV.children[i].checkState=state
               }catch(err){}
             }
-          }
+        }
+        function channelCheckbox(state){
+            for(var i=0; i < repeater_export_channel_list.count; i++){
+                repeater_export_channel_list.itemAt(i).children[0].checkState = state
+            }
+        }
         function selectVisible(){
           // No API found for this feature yet - -...Adobe bu gei li a
           return
-          }
+        }
         function addChannel(){
           try{
             var current_textureset = alg.texturesets.getActiveTextureSet()[0]
@@ -304,7 +357,7 @@ AlgButton {
         }
         function analyzingProject(){
             alg.log.info(" === Analyzing Export Presets === ")
-            var params = dliang_sp_tools.getSettings()
+            var params = dliang_sp_tools.getSettingsFromUI()
             var mesh_url = alg.project.lastImportedMeshUrl()
             var file_name = mesh_url.substring(mesh_url.lastIndexOf("/")+1).split(".")[0]
             var project_name = alg.project.name()
@@ -373,7 +426,6 @@ AlgButton {
 
         }
         function syncToMaya(export_log){
-
             var port = maya_port_TI.text
             var materialName = material_name_TI.text
             var renderer = renderer_CBB.currentText
@@ -431,26 +483,47 @@ AlgButton {
             str=str.replace(reg,replacement);
             return str;
         }
-        function exportTex(){
+        function exportTexConfirmation(){
             alg.log.info(" === exporting textures === ")
-            var params = getSettings()
+            dliang_sp_tools.getSettingsFromUI()
             /*
-            0. output_preset
+            0. output_channels = {channel_identifier:maya_parameter}
             1. output_path
             2. output_format
             3. output_resolution
             4. output_depth
             5. output_textureset
-            6. port
+            6. output_name
+            7. port
             */
-
+            /*
             if (params[3]==null){
                 var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
             }else{
                 var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
 
             }
+            */
+            label_export_information.text = "Export Channels Information"+"\n\n"
+            for (var channel_identifier in output_channels){
+                alg.log.info(channel_identifier)
+                var channel_name = alg.settings.value(channel_identifier)
+                var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name)
+                label_export_information.text += output_path + "/"+ resolved_file_format +"." + output_format +"\n"
+            }
+            dialog_export_confirmation.open()
+        }
 
+        function exportTex(){
+            for (var i in output_textureset){
+                alg.log.info(output_name)
+                var udim = output_textureset[i]
+                for (var channel_identifier in output_channels){
+                    var channel_name = alg.settings.value(channel_identifier)
+                    var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name).replace("$textureSet",udim)
+                    alg.mapexport.save([udim, channel_identifier], output_path + "/"+ resolved_file_format +"." + output_format)
+                }
+            }
             // connect to maya
             if (enable_connection_CB.checked){
                 alg.log.info("=== connecting to Maya ===")
@@ -460,7 +533,6 @@ AlgButton {
                 return
             }
         }
-
 
         // Layout, where the nightmare starts...
         ColumnLayout{
@@ -495,28 +567,28 @@ AlgButton {
                   ]
             }
 
-            AlgButton{
+            RowLayout{
+                AlgButton{
               id: select_all_btn
-              text: "select all"
+              text: "Select All"
               Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
               Layout.preferredHeight:25
               Layout.fillWidth:true
               onClicked:{
-                dliang_sp_tools.selectCheckbox(1)
+                dliang_sp_tools.textureSetCheckbox(1)
                   }
                 }
-
-            AlgButton{
+                AlgButton{
               id: hide_all_btn
-              text: "deselect all"
+              text: "Deselect All"
               Layout.preferredHeight:25
               Layout.fillWidth:true
               Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
               onClicked:{
-                dliang_sp_tools.selectCheckbox(0)
+                dliang_sp_tools.textureSetCheckbox(0)
                   }
               }
-
+            }
             AlgTabBar {
                 id: features_tab
                 anchors.topMargin: 10
@@ -815,12 +887,12 @@ AlgButton {
                                 Layout.preferredHeight:30
                                 currentIndex: 0
                                 FolderListModel{
-                                    id:export_preset_LM
+                                    id:listmodel_export_preset
                                     showDirs:false
                                     nameFilters: ["*.spexp"]
                                 }
 
-                                model:export_preset_LM
+                                model:listmodel_export_preset
                                 textRole: 'fileName'
                                 onCurrentTextChanged:{
                                     if(enable_connection_CB.checked){
@@ -879,6 +951,7 @@ AlgButton {
                         }
 
                         RowLayout{
+                            id: output_texture_format_RL
                             anchors.topMargin: 10
                             Layout.fillHeight: false
                             Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
@@ -890,34 +963,79 @@ AlgButton {
                                 Layout.minimumWidth: 100
                             }
                             AlgTextInput{
-                                id: file_name_TI
+                                id: textinput_file_name
                                 Layout.fillWidth: true
                                 text: "$mesh_$channel.$textureSet"
-                                onEditingFinished:{
-                                    dliang_sp_tools.updateFullPath()
-                                }
                             }
 
                         }
+
                         RowLayout{
+                            id: layout_output_channel_list
+                            Layout.columnSpan: 2
+                            Layout.fillWidth: true
+                            Layout.minimumHeight: 90
+                            spacing:0
+                            Rectangle {
+                              Layout.columnSpan: 2
+                              anchors.fill: parent
+                              anchors.margins: 1
+                              Layout.fillWidth: true
+                              //clip: true
+                              color: "transparent"
+                              AlgScrollView {
+                                id: scrollview_export_channel_list
+                                Layout.columnSpan: 2
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                Repeater{
+                                    id:repeater_export_channel_list
+                                    model:channel_list
+                                    RowLayout{
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: scrollview_export_channel_list.width-30
+                                        AlgCheckBox{
+                                            text:modelData
+                                            checked:true
+                                            hoverEnabled: false
+                                            Layout.minimumWidth: 90
+                                        }
+                                        AlgTextInput{
+                                            Layout.fillWidth: true
+                                        }
+
+
+
+                                    }
+                                }
+                              }
+
+                            }
+                        }
+
+                        RowLayout{
+                            id: layout_channel_selection
                             anchors.topMargin: 10
                             Layout.fillHeight: false
                             Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
                             Layout.fillWidth: true
                             Layout.columnSpan: 2
-
-                            AlgLabel{
-                                text:"Output Example"
-                                Layout.minimumWidth: 100
-                            }
-                            AlgTextInput{
-                                id: file_full_path_TI
+                            AlgButton{
+                                text:"Select All Channels"
                                 Layout.fillWidth: true
-                                readOnly: true
+                                onClicked: {
+                                    dliang_sp_tools.channelCheckbox(1)
+                                }
                             }
-
-
+                            AlgButton{
+                                text:"Deselect All"
+                                Layout.fillWidth: true
+                                onClicked: {
+                                    dliang_sp_tools.channelCheckbox(0)
+                                }
+                            }
                         }
+
                         AlgToolButton{
                           id:export_btn
                           iconName:"icons/export_textures.png"
@@ -933,7 +1051,9 @@ AlgButton {
 
                           }
                           onClicked:{
-                            dliang_sp_tools.exportTex()
+                            //dialog_export_confirmation.open()
+                            //dliang_sp_tools.getSettingsFromUI()
+                            dliang_sp_tools.exportTexConfirmation()
                             }
                           }
 
