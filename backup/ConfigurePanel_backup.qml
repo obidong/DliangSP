@@ -17,35 +17,6 @@ AlgDialog {
   height: 250
   minimumWidth: 300
   minimumHeight: 250
-  property var channel_identifier:[
-    "ambientOcclusion",
-    "anisotropylevel",
-    "anisotropyangle",
-    "basecolor",
-    "blendingmask",
-    "diffuse",
-    "displacement",
-    "emissive",
-    "glossiness",
-    "height",
-    "ior",
-    "metallic",
-    "normal",
-    "opacity",
-    "reflection",
-    "roughness",
-    "scattering",
-    "specular",
-    "specularlevel",
-    "transmissive",
-    "user0",
-    "user1",
-    "user2",
-    "user3",
-    "user4",
-    "user5",
-    "user6",
-    "user7"  ]
 
   function reload() {
     content.reload()
@@ -63,9 +34,7 @@ AlgDialog {
         var format_index = formatComboBox.currentIndex
         alg.settings.setValue("format", formatModel.get(format_index).text);
 
-        for (var i in channel_identifier){
-        alg.settings.setValue(channel_identifier[i], channel_identifier_repeater.itemAt(i).children[1].text)
-        }
+
   }
 
   Rectangle {
@@ -191,6 +160,7 @@ AlgDialog {
           }
         }
 
+
         RowLayout {
           spacing: 6
           Layout.fillWidth: true
@@ -231,117 +201,7 @@ AlgDialog {
             }
           }
         }
-
-        GridLayout{
-            columns: 3
-            Layout.minimumWidth: scrollView.width-15
-            columnSpacing: 3
-            rowSpacing: 3
-            Repeater{
-                id: channel_identifier_repeater
-                model: channel_identifier
-                RowLayout{
-                    Layout.columnSpan: 3
-                    AlgLabel{text:modelData
-                    Layout.minimumWidth: 100}
-                    AlgTextInput{Layout.minimumWidth: 200}
-                }
-
-            }
-            /*
-            AlgLabel{text:"BaseColor"}
-            AlgTextInput{
-               id: conf_basecolor_TE
-               Layout.fillWidth: true
-            }
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_basecolor_TE.text=""}
-            }
-
-
-            AlgLabel{text:"Metallic"}
-            AlgTextInput{
-                id: conf_metallic_TE
-                Layout.fillWidth: true
-
-            }
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_metallic_TE.text=""}
-            }
-
-            AlgLabel{text:"Roughness"}
-            AlgTextInput{
-                id: conf_roughness_TE
-               Layout.fillWidth: true
-
-            }
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_roughness_TE.text=""}
-            }
-
-            AlgLabel{text:"Normal"}
-            AlgTextInput{
-                id: conf_normal_TE
-                Layout.fillWidth: true
-
-            }
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_normal_TE.text=""}
-            }
-
-            AlgLabel{text:"Displacement"}
-            AlgTextInput{
-                id: conf_displacement_TE
-                Layout.fillWidth: true}
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_displacement_TE.text=""}
-            }
-
-            AlgLabel{text:"Emissive"}
-            AlgTextInput{
-                id: conf_emissive_TE
-                Layout.fillWidth: true}
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_emissive_TE.text=""}
-
-            }
-
-            AlgLabel{text:"Opacity"}
-            AlgTextInput{
-                id: conf_opacity_TE
-                Layout.fillWidth: true}
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_opacity_TE.text=""}
-            }
-
-            AlgLabel{text:"Transmissive"}
-            AlgTextInput{
-                id: conf_transmissive_TE
-                Layout.fillWidth: true}
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_transmissive_TE.text=""}
-            }
-
-            AlgLabel{text:"Scattering"}
-            AlgTextInput{
-                id: conf_scattering_TE
-                Layout.fillWidth: true}
-            AlgToolButton{
-                iconName:"icons/close.png"
-                onClicked: {conf_scattering_TE.text=""}
-            }
-            */
-          }
-
-        }
+      }
     }
   }
 

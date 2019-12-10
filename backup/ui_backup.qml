@@ -32,9 +32,6 @@ AlgButton {
     property var texture_set_list:null
     property string plugin_folder: alg.plugin_root_directory
     property var preset_folder: null
-    property var project_name: null
-    property var mesh_name: null
-    property var channel_name: null
     /*property var channel_identifier:[
       "ambientOcclusion",
       "anisotropylevel",
@@ -120,10 +117,6 @@ AlgButton {
 
         // basic functions
         function initParams(){
-            project_name = alg.project.name()
-            var mesh_url = alg.project.lastImportedMeshUrl()
-            mesh_name = mesh_url.substring(mesh_url.lastIndexOf("/")+1).split(".")[0]
-
             // refresh material name
             if(alg.project.settings.contains("material_name")){
                 material_name_TI.text = alg.project.settings.value("material_name")
@@ -151,22 +144,12 @@ AlgButton {
               output_dir_TE.text =  "..."
             }
 
-            // refresh file name format
-            if(alg.project.settings.contains("file_name_format")){
-              file_name_TI.text = alg.project.settings.value("file_name_format")
-            }else{
-              file_name_TI.text =  "$mesh_$channel.$textureSet"
-            }
-
             // refresh output format
             if(alg.project.settings.contains("output_format")){
                 export_format_LE.get(0).text = alg.project.settings.value("output_format")
             }else{
                 export_format_LE.get(0).text =  alg.settings.value('format')
             }
-
-            // refresh out file full path
-            dliang_sp_tools.updateFullPath()
 
             //refresh render engine
             if(alg.project.settings.contains("project_renderer")){
@@ -225,10 +208,6 @@ AlgButton {
         }
 
         // utils functions
-        function updateFullPath(){
-            file_full_path_TI.text =  output_dir_TE.text+"/"+file_name_TI.text.replace("$project",project_name).replace("$mesh",mesh_name)+"." +  export_format_CB.currentText
-
-        }
         function getTextureSetInfo(){
           var doc_info = alg.mapexport.documentStructure()
           var i = 0
@@ -261,6 +240,7 @@ AlgButton {
           // No API found for this feature yet - -...Adobe bu gei li a
           return
           }
+        // create new channel function
         function addChannel(){
           try{
             var current_textureset = alg.texturesets.getActiveTextureSet()[0]
@@ -280,6 +260,7 @@ AlgButton {
               alg.log.exception(err)
             }
         }
+        // set size and color profile functions
         function setSize(){
           var i=0
           var texture_set = dliang_sp_tools.getSelectedSets()
@@ -878,46 +859,6 @@ AlgButton {
 
                         }
 
-                        RowLayout{
-                            anchors.topMargin: 10
-                            Layout.fillHeight: false
-                            Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
-                            Layout.fillWidth: true
-                            Layout.columnSpan: 2
-
-                            AlgLabel{
-                                text:"Texture Name"
-                                Layout.minimumWidth: 100
-                            }
-                            AlgTextInput{
-                                id: file_name_TI
-                                Layout.fillWidth: true
-                                text: "$mesh_$channel.$textureSet"
-                                onEditingFinished:{
-                                    dliang_sp_tools.updateFullPath()
-                                }
-                            }
-
-                        }
-                        RowLayout{
-                            anchors.topMargin: 10
-                            Layout.fillHeight: false
-                            Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
-                            Layout.fillWidth: true
-                            Layout.columnSpan: 2
-
-                            AlgLabel{
-                                text:"Output Example"
-                                Layout.minimumWidth: 100
-                            }
-                            AlgTextInput{
-                                id: file_full_path_TI
-                                Layout.fillWidth: true
-                                readOnly: true
-                            }
-
-
-                        }
                         AlgToolButton{
                           id:export_btn
                           iconName:"icons/export_textures.png"
