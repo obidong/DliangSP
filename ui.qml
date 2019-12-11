@@ -17,27 +17,15 @@ AlgButton {
     width: 30; height: 30
     tooltip: "Launch Dliang Substance Painter Toolkit UI"
 
-    property var legal_strings: {
-    "BaseColor":["aseCol","asecol","iffuse","Dif","dif","lebedo","ase_col","ase_Col","ase col","difCol","DifCol"],
-    "Roughness":["oughness","pcrgh","pecRough","pecrough","spc_rgh","spec_rough","pec rough","spc rough"],
-    "Normal":["ormal","nml","nor"],
-    "Metallic":["etallic","etalness","metal","Metal"],
-    "Displacement":["isplacement","dsp","Dsp","disp","Disp","Height","height"],
-    "Emissive":["Emissive","emissive","emission","Emission"],
-    "Opacity":["pacity","persen"],
-    "Scattering":["cattering","sss","SSS"],
-    "Transmissive":["ransmissive","ransparen","efraction"]
-    }
     property bool loading: false
     property var texture_set_list:[]
     property string plugin_folder: alg.plugin_root_directory
-    property var preset_folder: null
     property var project_name: null
     property var mesh_name: null
     property var channel_name: null
     property var document: null
     property var channel_list: []
-    property var export_chan_list:[]
+    property var export_info:null
     property var output_channels:({})
     property var output_path:""
     property var output_format:""
@@ -52,60 +40,91 @@ AlgButton {
             "basecolor":"baseColor",
             "roughness":"specularRoughness",
             "normal":"NORMAL",
-            "metallic":"metalness"
-
+            "metallic":"metalness",
+            "height":"DISPLACEMENT",
+            "emissive":"emissionColor",
+            "opacity":"opacity",
+            "scattering":"subsurface",
+            "transmissive":"transmissionColor",
+            "ambientOcclusion":"",
+            "anisotropylevel":"",
+            "anisotropyangle":"",
+            "blendingmask":"",
+            "diffuse":"",
+            "displacement":"",
+            "glossiness":"",
+            "ior":"",
+            "reflection":"",
+            "specular":"",
+            "specularlevel":""
         },
         "VRay":{
             "basecolor":"color",
             "roughness":"reflectionGlossiness",
             "normal":"NORMAL",
-            "metallic":"metalness"
+            "metallic":"metalness",
+            "height":"DISPLACEMENT",
+            "emissive":"illumColor",
+            "opacity":"opacityMap",
+            "scattering":"fogMult",
+            "transmissive":"refractionColor",
+            "ambientOcclusion":"",
+            "anisotropylevel":"",
+            "anisotropyangle":"",
+            "blendingmask":"",
+            "diffuse":"",
+            "displacement":"",
+            "glossiness":"",
+            "ior":"",
+            "reflection":"",
+            "specular":"",
+            "specularlevel":""
+        },
+        "Renderman_PxrDisney":{
+            "basecolor":"baseColor",
+            "roughness":"roughness",
+            "normal":"NORMAL",
+            "metallic":"metallic",
+            "height":"DISPLACEMENT",
+            "emissive":"emitColor",
+            "opacity":"presence",
+            "scattering":"subsurface",
+            "transmissive":"",
+            "ambientOcclusion":"",
+            "anisotropylevel":"",
+            "anisotropyangle":"",
+            "blendingmask":"",
+            "diffuse":"",
+            "displacement":"",
+            "glossiness":"",
+            "ior":"",
+            "reflection":"",
+            "specular":"",
+            "specularlevel":""
+        },
+        "RedShift":{
+            "basecolor":"diffuse_color",
+            "roughness":"refl_roughness",
+            "normal":"NORMAL",
+            "metallic":"refl_metalness",
+            "height":"DISPLACEMENT",
+            "emissive":"emission_color",
+            "opacity":"opacity_color",
+            "scattering":"ss_amount",
+            "transmissive":"refr_color",
+            "ambientOcclusion":"",
+            "anisotropylevel":"",
+            "anisotropyangle":"",
+            "blendingmask":"",
+            "diffuse":"",
+            "displacement":"",
+            "glossiness":"",
+            "ior":"",
+            "reflection":"",
+            "specular":"",
+            "specularlevel":""
         }
     }
-    /*
-    if(renderer=="Arnold"){
-        channel_info.baseColor=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
-        channel_info.specularRoughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
-        channel_info.metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
-        channel_info.aiNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
-        channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-        channel_info.emissionColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
-        channel_info.opacity=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
-        channel_info.transmissionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
-        channel_info.subsurface=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
-    }else if(renderer == "Vray"){
-        channel_info.color=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
-        channel_info.reflectionGlossiness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
-        channel_info.metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
-        channel_info.vrayNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
-        channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-        channel_info.illumColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
-        channel_info.opacityMap=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
-        channel_info.refractionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
-        channel_info.fogMult=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
-    }else if(renderer == "Renderman_PxrDisney"){
-        channel_info.baseColor=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
-        channel_info.roughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
-        channel_info.metallic=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
-        channel_info.pxrNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
-        channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-        channel_info.emitColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
-        channel_info.presence=(["outAlpha", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
-        // PxrDisney has no refraction
-        channel_info.refractionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
-        channel_info.subsurface=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
-    }else if(renderer == "RedShift"){
-        channel_info.diffuse_color=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
-        channel_info.refl_roughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
-        channel_info.refl_metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
-        channel_info.rsNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
-        channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-        channel_info.emission_color=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"sRGB",emissive_TE.text])
-        channel_info.opacity_color=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
-        channel_info.refr_color=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
-        channel_info.ss_amount=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
-    }
-    */
 
     background: Rectangle {
         width: root.width; height: root.height
@@ -129,20 +148,6 @@ AlgButton {
       }catch(err){
           alg.log.exception(err)
       }
-  }
-
-    FileDialog  {
-    id: dialog_export_preset
-    width: 300
-    height: 60
-    visible: false
-    selectFolder: true
-    onAccepted:{
-        var get_folder = dialog_export_preset.folder
-        listmodel_export_preset.folder = get_folder
-        preset_folder = alg.fileIO.urlToLocalFile(get_folder)
-        alg.project.settings.setValue('project_export_preset_path', preset_folder)
-    }
   }
 
     AlgDialog  {
@@ -181,7 +186,7 @@ AlgButton {
         // basic functions
         function initParams(){
             //test
-            //alg.log.info(alg.texturesets.structure("1001").stacks[0].channels[0].userName)
+            //alg.log.info(alg.texturesets.structure("1001").stacks[0].channels)
             //init UI
             alg.log.info(alg.project.settings)
             channel_list = []
@@ -211,19 +216,6 @@ AlgButton {
             }else{
                 material_name_TI.text = alg.project.name()+"_mat"
             }
-
-            // refresh preset path
-            if(alg.project.settings.contains("project_export_preset_path")){
-              listmodel_export_preset.folder = alg.fileIO.localFileToUrl(alg.project.settings.value("project_export_preset_path"))
-              preset_folder = alg.project.settings.value("project_export_preset_path")
-            }else if(alg.settings.contains("export_preset_path")){
-              listmodel_export_preset.folder = alg.fileIO.localFileToUrl(alg.settings.value("export_preset_path"))
-              preset_folder = alg.settings.value("export_preset_path")
-            }else{
-                preset_folder = plugin_folder+"export-presets"
-                listmodel_export_preset.folder = alg.fileIO.localFileToUrl(preset_folder)
-            }
-
 
             // refresh output path
             if(alg.project.settings.contains("output_path")){
@@ -265,49 +257,6 @@ AlgButton {
             alg.log.exception(err)
           }
         }
-        function getSettingsFromUI(){
-            // get parameters from UI and store in alg.project.settings when exporting textures.
-            output_channels = {}
-            output_textureset = dliang_sp_tools.getSelectedSets()       // output texture sets
-            output_path = output_dir_TE.text                            // output texture folder
-            output_name = textinput_file_name.text                      // output texture file name structure
-            output_format = export_format_CB.currentText                // output extension
-            output_res = export_size_CB.currentText                     // output resolution
-            if (output_res == "default size"){
-                output_res = null
-            }else{
-                output_res=parseInt(output_res)
-            }
-                                                                        // output depth
-            if(bit_depth_CB.currentText == "8 bit"){
-                output_depth = 8
-            }else{
-                output_depth = 16
-            }
-            port = maya_port_TI.text
-
-            for(var i=0; i < repeater_export_channel_list.count; i++){
-                if (repeater_export_channel_list.itemAt(i).children[0].checked){
-                    output_channels[repeater_export_channel_list.itemAt(i).children[0].text]=repeater_export_channel_list.itemAt(i).children[1].text
-                }
-            }
-
-            alg.project.settings.setValue("material_name", material_name_TI.text)
-            alg.project.settings.setValue("output_path", output_path)
-            alg.project.settings.setValue("output_format", output_format)
-            alg.project.settings.setValue("project_renderer",renderer_CBB.currentText)
-        }
-        function setPresetPath(){
-            dialog_export_preset.visible = true
-        }
-        function filterPreset(token,identifier){
-            for(var i in legal_strings[identifier]){
-                if(token.includes(legal_strings[identifier][i])){
-                    return true}
-            }
-            return false
-        }
-
         // utils functions
         function getTextureSetInfo(){
           var doc_info = alg.mapexport.documentStructure()
@@ -387,174 +336,83 @@ AlgButton {
                 }
             }
         }
-        function analyzingProject(){
-            alg.log.info(" === Analyzing Export Presets === ")
-            var params = dliang_sp_tools.getSettingsFromUI()
-            var mesh_url = alg.project.lastImportedMeshUrl()
-            var file_name = mesh_url.substring(mesh_url.lastIndexOf("/")+1).split(".")[0]
-            var project_name = alg.project.name()
-
-            /*
-            0. out_preset,
-            1. project_tex_output_path
-            2. project_tex_output_format
-            3. out_res
-            4. out_depth
-            5. project_output_textureset
-            6. port
-            */
-
-            var export_log=alg.mapexport.getPathsExportDocumentMaps(params[0], params[1], params[2],params[5])
-            var tokens = []
-            for(var textureset in export_log){
-                for(var p in export_log[textureset]){
-                    tokens.push(p)
-                }
-            }
-
-            var unique_tokens = tokens.filter(function(elem, index, self) {
-                return index === self.indexOf(elem);
-            })
-
-            // fill preset tokens
-            for (var index in unique_tokens){
-                var token = unique_tokens[index]
-                if (dliang_sp_tools.filterPreset(token,"BaseColor")){
-                    basecolor_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }else if(dliang_sp_tools.filterPreset(token,"Roughness")){
-                    roughness_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }else if(dliang_sp_tools.filterPreset(token,"Metallic")){
-                    metallic_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }else if(dliang_sp_tools.filterPreset(token,"Normal")){
-                    normal_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }else if(dliang_sp_tools.filterPreset(token,"Displacement")){
-                    displacement_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }else if(dliang_sp_tools.filterPreset(token,"Emissive")){
-                    emissive_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }else if(dliang_sp_tools.filterPreset(token,"Opacity")){
-                    opacity_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }else if(dliang_sp_tools.filterPreset(token,"Transmissive")){
-                    transmissive_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }else if(dliang_sp_tools.filterPreset(token,"Scattering")){
-                    scattering_TE.text = token.replace("$project",project_name).replace("$mesh",file_name).replace("$textureSet","1001")
-                }
-            }
-
-        }
-        function prepForSync(){
-            var renderer = renderer_CBB.currentText
-            for(var i=0; i < repeater_export_channel_list.count; i++){
-                    var channel_identifier = repeater_export_channel_list.itemAt(i).children[0].text
-                    try{
-                        repeater_export_channel_list.itemAt(i).children[1].text = renderer_param[renderer][channel_identifier]
-                    }catch(err){}
-            }
-            //dliang_sp_tools.analyzingProject()
-            // init
-        }
-
-        function syncToMaya(export_log){
-            var port = maya_port_TI.text
-            var materialName = material_name_TI.text
-            var renderer = renderer_CBB.currentText
-            var channel_info ={}
-            var file_ext = export_format_CB.currentText.replace('"','\"')
-            if(renderer=="Arnold"){
-                channel_info.baseColor=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
-                channel_info.specularRoughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
-                channel_info.metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
-                channel_info.aiNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
-                channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-                channel_info.emissionColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
-                channel_info.opacity=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
-                channel_info.transmissionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
-                channel_info.subsurface=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
-            }else if(renderer == "Vray"){
-                channel_info.color=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
-                channel_info.reflectionGlossiness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
-                channel_info.metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
-                channel_info.vrayNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
-                channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-                channel_info.illumColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
-                channel_info.opacityMap=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
-                channel_info.refractionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
-                channel_info.fogMult=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
-            }else if(renderer == "Renderman_PxrDisney"){
-                channel_info.baseColor=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
-                channel_info.roughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
-                channel_info.metallic=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
-                channel_info.pxrNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
-                channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-                channel_info.emitColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
-                channel_info.presence=(["outAlpha", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
-                // PxrDisney has no refraction
-                channel_info.refractionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
-                channel_info.subsurface=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
-            }else if(renderer == "RedShift"){
-                channel_info.diffuse_color=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
-                channel_info.refl_roughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
-                channel_info.refl_metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
-                channel_info.rsNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
-                channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
-                channel_info.emission_color=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"sRGB",emissive_TE.text])
-                channel_info.opacity_color=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
-                channel_info.refr_color=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
-                channel_info.ss_amount=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
-            }
-
-            channel_info=(JSON.stringify(channel_info))
-            channel_info=dliang_sp_tools.replaceAll(channel_info,'"','\"')
-            alg.subprocess.check_output(["\""+alg.plugin_root_directory+"connect_maya.exe\"", port, materialName, channel_info, renderer])
-        }
         function replaceAll(str,replaced,replacement){
             var reg=new RegExp(replaced,"g");
             str=str.replace(reg,replacement);
             return str;
         }
+
+        // export functions
+        function getSettingsFromUI(){
+            // get parameters from UI and store in alg.project.settings when exporting textures.
+            output_channels = {}
+            output_textureset = dliang_sp_tools.getSelectedSets()       // output texture sets
+            output_path = output_dir_TE.text                            // output texture folder
+            output_name = textinput_file_name.text                      // output texture file name structure
+            output_format = export_format_CB.currentText                // output extension
+            output_res = export_size_CB.currentText                     // output resolution
+            if (output_res == "default size"){
+                output_res = null
+            }else{
+                output_res=parseInt(output_res)
+            }
+                                                                        // output depth
+            if(bit_depth_CB.currentText == "8 bit"){
+                output_depth = 8
+            }else{
+                output_depth = 16
+            }
+            port = maya_port_TI.text
+
+            for(var i=0; i < repeater_export_channel_list.count; i++){
+                if (repeater_export_channel_list.itemAt(i).children[0].checked){
+                    // output_channels= {basecolor:"baseColor", height:"DISPLACEMENT"...channel_identifier:maya_params}
+                    output_channels[repeater_export_channel_list.itemAt(i).children[0].text]=repeater_export_channel_list.itemAt(i).children[1].text
+                }
+            }
+
+            alg.project.settings.setValue("material_name", material_name_TI.text)
+            alg.project.settings.setValue("output_path", output_path)
+            alg.project.settings.setValue("output_format", output_format)
+            alg.project.settings.setValue("project_renderer",renderer_CBB.currentText)
+        }
         function exportTexConfirmation(){
             alg.log.info(" === exporting textures === ")
+            var export_channel_info = {}
+            var output_full_path ={}
             dliang_sp_tools.getSettingsFromUI()
-            /*
-            0. output_channels = {channel_identifier:maya_parameter}
-            1. output_path
-            2. output_format
-            3. output_resolution
-            4. output_depth
-            5. output_textureset
-            6. output_name
-            7. port
-            */
-            /*
-            if (params[3]==null){
-                var export_log=alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {bitDepth:params[4]}, params[5])
-            }else{
-                var export_log = alg.mapexport.exportDocumentMaps(params[0], params[1], params[2], {resolution:[params[3],params[3]], bitDepth:params[4]}, params[5])
-
-            }
-            */
-
             label_export_information.text = "Export Channels Information"+"\n\n"
+            label_export_information.text += "=== Export Channels ===\n"
             for (var channel_identifier in output_channels){
                 var channel_name = alg.settings.value(channel_identifier)
                 var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name)
-                label_export_information.text += output_path + "/"+ resolved_file_format +"." + output_format +"\n"
+                output_full_path[channel_identifier] = output_path + "/"+ resolved_file_format +"." + output_format
+                label_export_information.text += output_full_path[channel_identifier] +"\n"
+
             }
+            if (enable_connection_CB.checked){
+                for(var i=0; i < repeater_export_channel_list.count; i++){
+                    channel_identifier = repeater_export_channel_list.itemAt(i).children[0].text
+                    var maya_params = repeater_export_channel_list.itemAt(i).children[1].text
+                    export_channel_info[maya_params] = output_full_path[channel_identifier]
+                }
+            }
+            alg.log.info(export_channel_info)
+            export_info = export_channel_info
             dialog_export_confirmation.open()
 
         }
-
         function exportTex(){
             var map_info = {}
             if (output_res != null){
                 map_info = {resolution:[output_res,output_res]}
             }
-
             for (var i in output_textureset){
-                var udim = output_textureset[i]
+                var textureset = output_textureset[i]
                 for (var channel_identifier in output_channels){
                     var channel_name = alg.settings.value(channel_identifier)
                     if (channel_name == "USE_LABEL"){
-                        var channel_document = alg.texturesets.structure(udim).stacks[0].channels
+                        var channel_document = alg.texturesets.structure(textureset).stacks[0].channels
                         /*"channels": [
                         {
                           "format": "DataChannelFormat_L32F",
@@ -575,11 +433,11 @@ AlgButton {
                             }
                         }
                     }
-                    var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name).replace("$textureSet",udim)
+                    var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name).replace("$textureSet",textureset)
 
                     try{
-                        alg.mapexport.save([udim, channel_identifier], output_path + "/"+ resolved_file_format +"." + output_format, map_info)
-                        alg.log.info("Finish exporting "+ udim +" "+channel_name)
+                        alg.mapexport.save([textureset, channel_identifier], output_path + "/"+ resolved_file_format +"." + output_format, map_info)
+                        alg.log.info("Finish exporting "+ textureset +" "+channel_name)
                     }catch(err){
                         //alg.log.exception(err)
                      }
@@ -595,6 +453,25 @@ AlgButton {
                 return
             }
         }
+        function prepForSync(){
+            var renderer = renderer_CBB.currentText
+            for(var i=0; i < repeater_export_channel_list.count; i++){
+                    var channel_identifier = repeater_export_channel_list.itemAt(i).children[0].text
+                    try{
+                        repeater_export_channel_list.itemAt(i).children[1].text = renderer_param[renderer][channel_identifier]
+                    }catch(err){}
+            }
+        }
+        function syncToMaya(){
+            var port = maya_port_TI.text
+            var materialName = material_name_TI.text
+            var renderer = renderer_CBB.currentText
+            var file_ext = export_format_CB.currentText
+            var channel_info=(JSON.stringify(export_info))
+            channel_info=dliang_sp_tools.replaceAll(channel_info,'"','\"')
+            alg.log.info(channel_info)
+            alg.subprocess.check_output(["\""+alg.plugin_root_directory+"connect_maya.exe\"", port, materialName, channel_info, renderer])
+        }
 
         // Layout, where the nightmare starts...
         ColumnLayout{
@@ -605,11 +482,30 @@ AlgButton {
             anchors.bottomMargin:5
             anchors.fill:parent
 
-            AlgLabel {
-              id: texture_sets_label
-              Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
-              text: "Textures Sets"
+            RowLayout{
+                Layout.fillWidth: true
+                AlgToolButton{
+                    Layout.alignment:Qt.AlignLeft|Qt.AlignTop
+                    iconName: "icons/sync.png"
+                    iconSize: Qt.size(30,30)
+                    onClicked: {
+                        try{
+                            if(alg.project.isOpen()){
+                                dliang_sp_tools.initParams()
+                            }
+                            dliang_sp_tools.refreshInterface()
+                            texture_set_list = dliang_sp_tools.getTextureSetInfo()
+                        }catch(err){
+                            alg.log.exception(err)
+                        }
+                    }
                 }
+                AlgLabel {
+                  id: texture_sets_label
+                  Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                  text: "Textures Sets"
+                    }
+            }
 
             AlgScrollView{
               id:texture_sets_SV
@@ -935,47 +831,8 @@ AlgButton {
                           }
 
                         RowLayout{
-                            id: preset_column_RL
-                            anchors.topMargin: 10
-                            Layout.fillHeight: false
-                            Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
-                            Layout.fillWidth: true
-                            Layout.columnSpan: 2
-
-                            AlgLabel{text:"Export Preset"}
-                            AlgComboBox {
-                                id:export_presets_CB
-                                Layout.fillWidth:true
-                                Layout.preferredHeight:30
-                                currentIndex: 0
-                                FolderListModel{
-                                    id:listmodel_export_preset
-                                    showDirs:false
-                                    nameFilters: ["*.spexp"]
-                                }
-
-                                model:listmodel_export_preset
-                                textRole: 'fileName'
-                                onCurrentTextChanged:{
-                                    if(enable_connection_CB.checked){
-                                        dliang_sp_tools.prepForSync()
-                                    }
-                                }
-                            }
-
-                            AlgButton {
-                                id: preset_folder_btn
-                                iconName:"icons/open_folder.png"
-                                anchors.right: parent.right
-                                onClicked: {
-                                  dliang_sp_tools.setPresetPath()
-                                }
-                            }
-                        }
-
-                        RowLayout{
                             id: output_dir_RL
-                            anchors.topMargin: 10
+                            anchors.topMargin: 2
                             Layout.fillHeight: false
                             Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
                             Layout.fillWidth: true
@@ -987,7 +844,7 @@ AlgButton {
                                 Layout.fillWidth: true
                             }
 
-                            AlgButton {
+                            AlgToolButton {
                                 id: output_folder_btn
                                 iconName:"icons/open_folder.png"
                                 anchors.right: parent.right
@@ -1011,7 +868,6 @@ AlgButton {
                             }
 
                         }
-
                         RowLayout{
                             id: output_texture_format_RL
                             anchors.topMargin: 10
@@ -1021,8 +877,8 @@ AlgButton {
                             Layout.columnSpan: 2
 
                             AlgLabel{
-                                text:"Texture Name"
-                                Layout.minimumWidth: 100
+                                text:"File Format "
+                                Layout.maximumWidth: 90
                             }
                             AlgTextInput{
                                 id: textinput_file_name
@@ -1032,18 +888,36 @@ AlgButton {
 
                         }
 
+                        Rectangle{
+                            Layout.fillWidth: true
+                            height:2
+                            Layout.columnSpan: 2
+                            color:"#6d6d6d"
+                        }
+
+                        RowLayout{
+                            Layout.fillWidth: true
+                            Layout.columnSpan: 2
+                            AlgLabel{
+                                text:"SP Channel"
+                                Layout.minimumWidth: 90
+                            }
+                            AlgLabel{
+                                Layout.fillWidth: true
+                                text:"    Maya Shader Parameter"
+                            }
+                        }
                         RowLayout{
                             id: layout_output_channel_list
                             Layout.columnSpan: 2
                             Layout.fillWidth: true
-                            Layout.minimumHeight: 90
+                            Layout.minimumHeight: 110
                             spacing:0
                             Rectangle {
                               Layout.columnSpan: 2
                               anchors.fill: parent
                               anchors.margins: 1
                               Layout.fillWidth: true
-                              //clip: true
                               color: "transparent"
                               AlgScrollView {
                                 id: scrollview_export_channel_list
@@ -1055,14 +929,16 @@ AlgButton {
                                     model:channel_list
                                     RowLayout{
                                         Layout.fillWidth: true
-                                        Layout.minimumWidth: scrollview_export_channel_list.width-30
+                                        Layout.minimumWidth: scrollview_export_channel_list.width-5
                                         AlgCheckBox{
                                             text:modelData
+                                            tooltip:modelData
                                             checked:true
                                             hoverEnabled: false
-                                            Layout.minimumWidth: 90
+                                            Layout.maximumWidth: 110
                                         }
                                         AlgTextInput{
+                                            Layout.alignment: Qt.AlignLeft
                                             Layout.fillWidth: true
                                         }
 
@@ -1113,8 +989,6 @@ AlgButton {
 
                           }
                           onClicked:{
-                            //dialog_export_confirmation.open()
-                            //dliang_sp_tools.getSettingsFromUI()
                             dliang_sp_tools.exportTexConfirmation()
                             }
                           }
@@ -1163,53 +1037,40 @@ AlgButton {
                                     }
                                 }
 
-                                RowLayout{
+                                GridLayout{
+                                    columns:2
                                     Layout.columnSpan: 2
                                     Layout.fillWidth: true
-                                    spacing:5
-
-                                    AlgToolButton{
-                                        Layout.fillHeight: true
-                                        Layout.preferredWidth: 60
-                                        iconName:"icons/sync.png"
-                                        iconSize: Qt.size(45,36)
-                                        //background: Rectangle {color: "transparent"}
-                                        onClicked: {
-                                            dliang_sp_tools.prepForSync()
+                                    AlgLabel{
+                                    text:"Material Name"
+                                    Layout.alignment: Qt.AlignRight
+                                }
+                                    AlgTextInput{
+                                    id: material_name_TI
+                                    Layout.fillWidth: true
+                                    text:alg.project.name()+"_mat"
+                                }
+                                    AlgLabel{
+                                    text:"Renderer"
+                                    Layout.alignment: Qt.AlignRight
+                                }
+                                    AlgComboBox{
+                                    id: renderer_CBB
+                                    Layout.fillWidth: true
+                                    model: ListModel {
+                                          id: create_maya_shader_LM
+                                          ListElement { text: "" }
+                                          ListElement { text: "Arnold" }
+                                          ListElement { text: "VRay" }
+                                          ListElement { text: "Renderman_PxrDisney" }
+                                          ListElement { text: "RedShift" }
                                         }
+                                    onCurrentTextChanged: {
+                                        dliang_sp_tools.prepForSync()
                                     }
-                                    GridLayout{
-                                        columns:2
-                                        AlgLabel{
-                                        text:"Material Name"
-                                        Layout.alignment: Qt.AlignRight
-                                    }
-                                        AlgTextInput{
-                                        id: material_name_TI
-                                        Layout.fillWidth: true
-                                        text:alg.project.name()+"_mat"
-                                    }
-                                        AlgLabel{
-                                        text:"Renderer"
-                                        Layout.alignment: Qt.AlignRight
-                                    }
-                                        AlgComboBox{
-                                        id: renderer_CBB
-                                        Layout.fillWidth: true
-                                        model: ListModel {
-                                              id: create_maya_shader_LM
-                                              ListElement { text: "" }
-                                              ListElement { text: "Arnold" }
-                                              ListElement { text: "VRay" }
-                                              ListElement { text: "Renderman_PxrDisney" }
-                                              ListElement { text: "RedShift" }
-                                            }
-                                        onCurrentTextChanged: {
-                                            dliang_sp_tools.prepForSync()
-                                        }
-                                        }
                                     }
                                 }
+
 
                             }
 
