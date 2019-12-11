@@ -46,36 +46,65 @@ AlgButton {
     property var output_textureset:[]
     property var output_name:""
     property var port:""
+    property var renderer_param:
+    {
+        "Arnold":{
+            "basecolor":"baseColor",
+            "roughness":"specularRoughness",
+            "normal":"NORMAL",
+            "metallic":"metalness"
 
-    /*property var channel_identifier:[
-      "ambientOcclusion",
-      "anisotropylevel",
-      "anisotropyangle",
-      "basecolor",
-      "blendingmask",
-      "diffuse",
-      "displacement",
-      "emissive",
-      "glossiness",
-      "height",
-      "ior",
-      "metallic",
-      "normal",
-      "opacity",
-      "reflection",
-      "roughness",
-      "scattering",
-      "specular",
-      "specularlevel",
-      "transmissive",
-      "user0",
-      "user1",
-      "user2",
-      "user3",
-      "user4",
-      "user5",
-      "user6",
-      "user7"  ]
+        },
+        "VRay":{
+            "basecolor":"color",
+            "roughness":"reflectionGlossiness",
+            "normal":"NORMAL",
+            "metallic":"metalness"
+        }
+    }
+    /*
+    if(renderer=="Arnold"){
+        channel_info.baseColor=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
+        channel_info.specularRoughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
+        channel_info.metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
+        channel_info.aiNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
+        channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
+        channel_info.emissionColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
+        channel_info.opacity=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
+        channel_info.transmissionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
+        channel_info.subsurface=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
+    }else if(renderer == "Vray"){
+        channel_info.color=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
+        channel_info.reflectionGlossiness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
+        channel_info.metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
+        channel_info.vrayNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
+        channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
+        channel_info.illumColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
+        channel_info.opacityMap=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
+        channel_info.refractionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
+        channel_info.fogMult=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
+    }else if(renderer == "Renderman_PxrDisney"){
+        channel_info.baseColor=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
+        channel_info.roughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
+        channel_info.metallic=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
+        channel_info.pxrNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
+        channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
+        channel_info.emitColor=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"Raw",emissive_TE.text])
+        channel_info.presence=(["outAlpha", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
+        // PxrDisney has no refraction
+        channel_info.refractionColor=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
+        channel_info.subsurface=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
+    }else if(renderer == "RedShift"){
+        channel_info.diffuse_color=(["outColor", (output_dir_TE.text+"/"+basecolor_TE.text+"."+file_ext),"sRGB",basecolor_TE.text])
+        channel_info.refl_roughness=(["outAlpha", (output_dir_TE.text+"/"+roughness_TE.text+"."+file_ext),"Raw",roughness_TE.text])
+        channel_info.refl_metalness=(["outAlpha", (output_dir_TE.text+"/"+metallic_TE.text+"."+file_ext),"Raw",metallic_TE.text])
+        channel_info.rsNormal=(["outColor", (output_dir_TE.text+"/"+normal_TE.text+"."+file_ext),"Raw",normal_TE.text])
+        channel_info.displacement=(["outAlpha", (output_dir_TE.text+"/"+displacement_TE.text+"."+file_ext),"Raw",displacement_TE.text])
+        channel_info.emission_color=(["outColor", (output_dir_TE.text+"/"+emissive_TE.text+"."+file_ext),"sRGB",emissive_TE.text])
+        channel_info.opacity_color=(["outColor", (output_dir_TE.text+"/"+opacity_TE.text+"."+file_ext),"Raw",opacity_TE.text])
+        channel_info.refr_color=(["outColor", (output_dir_TE.text+"/"+transmissive_TE.text+"."+file_ext),"sRGB",transmissive_TE.text])
+        channel_info.ss_amount=(["outAlpha", (output_dir_TE.text+"/"+scattering_TE.text+"."+file_ext),"Raw",scattering_TE.text])
+    }
     */
 
     background: Rectangle {
@@ -118,14 +147,15 @@ AlgButton {
 
     AlgDialog  {
         id: dialog_export_confirmation
-        width: 300
-        height: 160
+        minimumHeight: 200
+        minimumWidth: 330
         defaultButtonText: "Export"
         visible: false
         ColumnLayout{
             anchors.fill: parent
             AlgLabel{
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+                Layout.margins: 15
                 id:label_export_information
             }
         }
@@ -150,9 +180,11 @@ AlgButton {
 
         // basic functions
         function initParams(){
+            //test
+            //alg.log.info(alg.texturesets.structure("1001").stacks[0].channels[0].userName)
             //init UI
+            alg.log.info(alg.project.settings)
             channel_list = []
-            alg.log.info(alg.mapexport.documentStructure())
             // gether project information
             project_name = alg.project.name()
             var mesh_url = alg.project.lastImportedMeshUrl()
@@ -410,21 +442,17 @@ AlgButton {
 
         }
         function prepForSync(){
-            basecolor_TE.text=""
-            metallic_TE.text=""
-            roughness_TE.text=""
-            normal_TE.text=""
-            displacement_TE.text=""
-            emissive_TE.text = ""
-            opacity_TE.text=""
-            transmissive_TE.text=""
-            scattering_TE.text=""
-
-            dliang_sp_tools.analyzingProject()
+            var renderer = renderer_CBB.currentText
+            for(var i=0; i < repeater_export_channel_list.count; i++){
+                    var channel_identifier = repeater_export_channel_list.itemAt(i).children[0].text
+                    try{
+                        repeater_export_channel_list.itemAt(i).children[1].text = renderer_param[renderer][channel_identifier]
+                    }catch(err){}
+            }
+            //dliang_sp_tools.analyzingProject()
             // init
-
-
         }
+
         function syncToMaya(export_log){
             var port = maya_port_TI.text
             var materialName = material_name_TI.text
@@ -504,24 +532,58 @@ AlgButton {
 
             }
             */
+
             label_export_information.text = "Export Channels Information"+"\n\n"
             for (var channel_identifier in output_channels){
-                alg.log.info(channel_identifier)
                 var channel_name = alg.settings.value(channel_identifier)
                 var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name)
                 label_export_information.text += output_path + "/"+ resolved_file_format +"." + output_format +"\n"
             }
             dialog_export_confirmation.open()
+
         }
 
         function exportTex(){
+            var map_info = {}
+            if (output_res != null){
+                map_info = {resolution:[output_res,output_res]}
+            }
+
             for (var i in output_textureset){
-                alg.log.info(output_name)
                 var udim = output_textureset[i]
                 for (var channel_identifier in output_channels){
                     var channel_name = alg.settings.value(channel_identifier)
+                    if (channel_name == "USE_LABEL"){
+                        var channel_document = alg.texturesets.structure(udim).stacks[0].channels
+                        /*"channels": [
+                        {
+                          "format": "DataChannelFormat_L32F",
+                          "type": "DataChannelType_User0",
+                          "uid": 9412,
+                          "userName": "MyChannelMask"
+                        },
+                        {
+                          "format": "DataChannelFormat_sRGB8",
+                          "type": "DataChannelType_BaseColor",
+                          "uid": 9413,
+                          "userName": ""
+                        }
+                        */
+                        for (var index in channel_document){
+                            if (channel_identifier.includes(channel_document[index].type.replace("DataChannelType_U",""))){
+                                channel_name = channel_document[index].userName
+                            }
+                        }
+                    }
                     var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name).replace("$textureSet",udim)
-                    alg.mapexport.save([udim, channel_identifier], output_path + "/"+ resolved_file_format +"." + output_format)
+
+                    try{
+                        alg.mapexport.save([udim, channel_identifier], output_path + "/"+ resolved_file_format +"." + output_format, map_info)
+                        alg.log.info("Finish exporting "+ udim +" "+channel_name)
+                    }catch(err){
+                        //alg.log.exception(err)
+                     }
+
                 }
             }
             // connect to maya
@@ -1138,237 +1200,16 @@ AlgButton {
                                               id: create_maya_shader_LM
                                               ListElement { text: "" }
                                               ListElement { text: "Arnold" }
-                                              ListElement { text: "Vray" }
+                                              ListElement { text: "VRay" }
                                               ListElement { text: "Renderman_PxrDisney" }
                                               ListElement { text: "RedShift" }
+                                            }
+                                        onCurrentTextChanged: {
+                                            dliang_sp_tools.prepForSync()
                                         }
-                                    }
+                                        }
                                     }
                                 }
-
-                                // layout with ScrollBar, save for future.
-                                RowLayout{
-                                    Layout.columnSpan: 2
-                                    Layout.fillWidth: true
-                                    Layout.minimumHeight: 150
-                                    spacing:0
-                                    Rectangle {
-                                      id: content
-                                      Layout.columnSpan: 2
-                                      anchors.fill: parent
-                                      anchors.margins: 1
-                                      Layout.fillWidth: true
-                                      //clip: true
-                                      color: "transparent"
-                                      AlgScrollView {
-                                        id: scrollView
-                                        Layout.columnSpan: 2
-                                        anchors.fill: parent
-                                        anchors.margins: 1
-                                    GridLayout{
-                                        columns: 3
-                                        Layout.minimumWidth: scrollView.width-15
-                                        columnSpacing: 3
-                                        rowSpacing: 0
-
-                                        AlgLabel{text:"BaseColor"}
-                                        AlgTextInput{
-                                           id: basecolor_TE
-                                           Layout.fillWidth: true
-                                        }
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {basecolor_TE.text=""}
-                                        }
-
-
-                                        AlgLabel{text:"Metallic"}
-                                        AlgTextInput{
-                                            id: metallic_TE
-                                            Layout.fillWidth: true
-
-                                        }
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {metallic_TE.text=""}
-                                        }
-
-                                        AlgLabel{text:"Roughness"}
-                                        AlgTextInput{
-                                            id: roughness_TE
-                                           Layout.fillWidth: true
-
-                                        }
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {roughness_TE.text=""}
-                                        }
-
-                                        AlgLabel{text:"Normal"}
-                                        AlgTextInput{
-                                            id: normal_TE
-                                            Layout.fillWidth: true
-
-                                        }
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {normal_TE.text=""}
-                                        }
-
-                                        AlgLabel{text:"Displacement"}
-                                        AlgTextInput{
-                                            id: displacement_TE
-                                            Layout.fillWidth: true}
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {displacement_TE.text=""}
-                                        }
-
-                                        AlgLabel{text:"Emissive"}
-                                        AlgTextInput{
-                                            id: emissive_TE
-                                            Layout.fillWidth: true}
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {emissive_TE.text=""}
-
-                                        }
-
-                                        AlgLabel{text:"Opacity"}
-                                        AlgTextInput{
-                                            id: opacity_TE
-                                            Layout.fillWidth: true}
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {opacity_TE.text=""}
-                                        }
-
-                                        AlgLabel{text:"Transmissive"}
-                                        AlgTextInput{
-                                            id: transmissive_TE
-                                            Layout.fillWidth: true}
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {transmissive_TE.text=""}
-                                        }
-
-                                        AlgLabel{text:"Scattering"}
-                                        AlgTextInput{
-                                            id: scattering_TE
-                                            Layout.fillWidth: true}
-                                        AlgToolButton{
-                                            iconName:"icons/close.png"
-                                            onClicked: {scattering_TE.text=""}
-                                        }
-
-                                      }
-                                    }
-
-                                }
-                                }
-
-
-                                /*
-                                GridLayout{
-                                    columns: 3
-                                    //width: scrollView.width-15
-                                    Layout.fillWidth: true
-                                    Layout.columnSpan: 2
-                                    columnSpacing: 3
-                                    rowSpacing: 0
-                                    //Layout.fillWidth: true
-
-                                    AlgLabel{text:"BaseColor"}
-                                    AlgTextInput{
-                                       id: basecolor_TE
-                                       Layout.fillWidth: true
-                                    }
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {basecolor_TE.text=""}
-                                    }
-
-
-                                    AlgLabel{text:"Metallic"}
-                                    AlgTextInput{
-                                        id: metallic_TE
-                                        Layout.fillWidth: true
-                                    }
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {metallic_TE.text=""}
-                                    }
-
-                                    AlgLabel{text:"Roughness"}
-                                    AlgTextInput{
-                                        id: roughness_TE
-                                       Layout.fillWidth: true
-
-                                    }
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {roughness_TE.text=""}
-                                    }
-
-                                    AlgLabel{text:"Normal"}
-                                    AlgTextInput{
-                                        id: normal_TE
-                                        Layout.fillWidth: true
-
-                                    }
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {normal_TE.text=""}
-                                    }
-
-                                    AlgLabel{text:"Displacement"}
-                                    AlgTextInput{
-                                        id: displacement_TE
-                                        Layout.fillWidth: true}
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {displacement_TE.text=""}
-                                    }
-
-                                    AlgLabel{text:"Emissive"}
-                                    AlgTextInput{
-                                        id: emissive_TE
-                                        Layout.fillWidth: true}
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {emissive_TE.text=""}
-
-                                    }
-
-                                    AlgLabel{text:"Opacity"}
-                                    AlgTextInput{
-                                        id: opacity_TE
-                                        Layout.fillWidth: true}
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {opacity_TE.text=""}
-                                    }
-
-                                    AlgLabel{text:"Transmissive"}
-                                    AlgTextInput{
-                                        id: transmissive_TE
-                                        Layout.fillWidth: true}
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {transmissive_TE.text=""}
-                                    }
-
-                                    AlgLabel{text:"Scattering"}
-                                    AlgTextInput{
-                                        id: scattering_TE
-                                        Layout.fillWidth: true}
-                                    AlgToolButton{
-                                        iconName:"icons/close.png"
-                                        onClicked: {scattering_TE.text=""}
-                                    }
-
-                                }
-                                */
 
                             }
 
