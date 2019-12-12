@@ -11,6 +11,7 @@ import AlgWidgets 2.0
 import Qt.labs.folderlistmodel 1.0
 import QtQuick.Controls 2.0
 
+
 AlgButton {
     id: root
     antialiasing: true
@@ -27,13 +28,14 @@ AlgButton {
     property var channel_list: []
     property var export_info:null
     property var output_channels:({})
-    property var output_path:""
-    property var output_format:""
-    property var output_res:""
-    property var output_depth:""
+    property string output_path:""
+    property string output_format:""
+    property string output_normal_format: ""
+    property string output_res:""
+    property string output_depth:""
     property var output_textureset:[]
-    property var output_name:""
-    property var port:""
+    property string output_name:""
+    property string port:""
     property var renderer_param:
     {
         "Arnold":{
@@ -157,12 +159,25 @@ AlgButton {
         defaultButtonText: "Export"
         visible: false
         ColumnLayout{
-            anchors.fill: parent
             AlgLabel{
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
                 Layout.margins: 15
                 id:label_export_information
             }
+            AlgProgressBar {
+                id: progressbar_export
+                Layout.minimumWidth: 190
+                Layout.maximumWidth: 190
+                Layout.minimumHeight: 25
+                Layout.maximumHeight: 25
+                Layout.alignment: Qt.AlignHCenter|Qt.AlignTop
+                from: 0
+                to: 1
+                value: 0.0
+                height: 25
+
+            }
+
         }
 
         onAccepted:{
@@ -173,7 +188,7 @@ AlgButton {
         id: dliang_sp_tools
         title: "Dliang SP Toolkit"
         visible: false
-        width: 250
+        width: 320
         height: 700
         minimumWidth: 300
         minimumHeight: 600
@@ -350,9 +365,15 @@ AlgButton {
             output_path = output_dir_TE.text                            // output texture folder
             output_name = textinput_file_name.text                      // output texture file name structure
             output_format = export_format_CB.currentText                // output extension
+            var normal_format = cbb_normal_format.currentText        // output normal format
+            if (normal_format == "OpenGL"){
+                output_normal_format = "normal_opengl"
+            }else{
+                output_normal_format = "normal_directx"
+            }
             output_res = export_size_CB.currentText                     // output resolution
             if (output_res == "default size"){
-                output_res = null
+                output_res = ""
             }else{
                 output_res=parseInt(output_res)
             }
@@ -380,9 +401,12 @@ AlgButton {
             alg.log.info(" === exporting textures === ")
             var export_channel_info = {}
             var output_full_path ={}
+            progressbar_export.value = 0
             dliang_sp_tools.getSettingsFromUI()
             label_export_information.text = "Export Channels Information"+"\n\n"
             label_export_information.text += "=== Export Channels ===\n"
+
+
             for (var channel_identifier in output_channels){
                 var channel_name = alg.settings.value(channel_identifier)
                 var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name)
@@ -390,11 +414,14 @@ AlgButton {
                 label_export_information.text += output_full_path[channel_identifier] +"\n"
 
             }
+            // if export to maya
             if (enable_connection_CB.checked){
                 for(var i=0; i < repeater_export_channel_list.count; i++){
-                    channel_identifier = repeater_export_channel_list.itemAt(i).children[0].text
-                    var maya_params = repeater_export_channel_list.itemAt(i).children[1].text
-                    export_channel_info[maya_params] = output_full_path[channel_identifier]
+                    if (repeater_export_channel_list.itemAt(i).children[0].checked){
+                        channel_identifier = repeater_export_channel_list.itemAt(i).children[0].text
+                        var maya_params = repeater_export_channel_list.itemAt(i).children[1].text
+                        export_channel_info[channel_identifier] = [output_full_path[channel_identifier],maya_params]
+                    }
                 }
             }
             alg.log.info(export_channel_info)
@@ -404,9 +431,10 @@ AlgButton {
         }
         function exportTex(){
             var map_info = {}
-            if (output_res != null){
+            if (output_res != ""){
                 map_info = {resolution:[output_res,output_res]}
             }
+
             for (var i in output_textureset){
                 var textureset = output_textureset[i]
                 for (var channel_identifier in output_channels){
@@ -430,20 +458,29 @@ AlgButton {
                         for (var index in channel_document){
                             if (channel_identifier.includes(channel_document[index].type.replace("DataChannelType_U",""))){
                                 channel_name = channel_document[index].userName
+                                export_info[channel_identifier][0] = export_info[channel_identifier][0].replace("USE_LABEL",channel_name)
                             }
                         }
                     }
                     var resolved_file_format  = output_name.replace("$channel",channel_name).replace("$mesh",mesh_name).replace("$project",project_name).replace("$textureSet",textureset)
 
                     try{
-                        alg.mapexport.save([textureset, channel_identifier], output_path + "/"+ resolved_file_format +"." + output_format, map_info)
+                        if (channel_identifier == "normal"){
+                            alg.mapexport.saveConvertedMap(textureset,output_normal_format,output_path + "/"+ resolved_file_format +"." + output_format, map_info)
+                        }else{
+                            alg.mapexport.save([textureset, channel_identifier], output_path + "/"+ resolved_file_format +"." + output_format, map_info)
+                        }
                         alg.log.info("Finish exporting "+ textureset +" "+channel_name)
                     }catch(err){
                         //alg.log.exception(err)
                      }
 
                 }
+                if (progressbar_export.value<0.975){
+                    progressbar_export.value += 1/output_textureset.length
+                }
             }
+            dialog_export_confirmation.close()
             // connect to maya
             if (enable_connection_CB.checked){
                 alg.log.info("=== connecting to Maya ===")
@@ -471,6 +508,8 @@ AlgButton {
             channel_info=dliang_sp_tools.replaceAll(channel_info,'"','\"')
             alg.log.info(channel_info)
             alg.subprocess.check_output(["\""+alg.plugin_root_directory+"connect_maya.exe\"", port, materialName, channel_info, renderer])
+            //for checking
+            alg.log.info("\"" + alg.plugin_root_directory + "connect_maya.exe\"" + " " + port + " " + materialName + " " + channel_info + " " + renderer)
         }
 
         // Layout, where the nightmare starts...
@@ -556,13 +595,7 @@ AlgButton {
                 AlgTabButton {
                     width:children.width
                     id: create_tab_btn
-                    text: "Create"
-                    activeCloseButton:null
-                  }
-                AlgTabButton {
-                    id: modify_tab_btn
-                    text: "Modify"
-                    width:children.width
+                    text: "Create and Modify"
                     activeCloseButton:null
                   }
                 AlgTabButton {
@@ -677,17 +710,14 @@ AlgButton {
                                 dliang_sp_tools.addChannel()
                               }
                           }
+                        //Modify
+                        Rectangle{
+                            Layout.fillWidth: true
+                            Layout.columnSpan: 2
+                            radius: 2
+                            height:3
+                            color:"#d6d6d6"
                         }
-                    // modify texture set tab
-                    GridLayout{
-                        id: modify_channel_layout
-                        anchors.topMargin: 10
-                        Layout.fillHeight: false
-                        Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
-                        Layout.fillWidth: true
-                        columns: 2
-                        columnSpacing: 10
-
                         AlgLabel{text: "texture size: "}
                         AlgLabel{text: "color profile: "}
                         AlgComboBox {
@@ -773,7 +803,8 @@ AlgButton {
                               dliang_sp_tools.setColorProfile()
                               }
                           }
-                        }
+
+                    }
                     // Export textures tab
                     GridLayout{
                         id: export_tab_layout
@@ -884,15 +915,27 @@ AlgButton {
                                 id: textinput_file_name
                                 Layout.fillWidth: true
                                 text: "$mesh_$channel.$textureSet"
+                                tooltip:"$mesh: mesh name\n$project: current project name\n$channel: channel name preset\n$textureSet: UDIM only!"
+                            }
+                            AlgComboBox{
+                                id:cbb_normal_format
+                                tooltip: "Normal Map Format"
+                                Layout.maximumWidth: 70
+                                model:ListModel{
+                                    ListElement{text:"OpenGL"}
+                                    ListElement{text:"DirectX"}
+                                }
                             }
 
                         }
 
+
                         Rectangle{
                             Layout.fillWidth: true
-                            height:2
+                            height:3
                             Layout.columnSpan: 2
-                            color:"#6d6d6d"
+                            radius:2
+                            color:"#d6d6d6"
                         }
 
                         RowLayout{
@@ -989,13 +1032,16 @@ AlgButton {
 
                           }
                           onClicked:{
-                            dliang_sp_tools.exportTexConfirmation()
+                              //window_export_progress.open()
+                              //progressbar_export.value = 0.333333
+                              dliang_sp_tools.exportTexConfirmation()
                             }
                           }
 
                         Rectangle{
-                            color:"#6d6d6d"
+                            color:"#d6d6d6"
                             Layout.preferredHeight: 3
+                            radius:2
                             Layout.fillWidth: true
                             Layout.columnSpan: 2
                         }
