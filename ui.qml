@@ -140,6 +140,8 @@ AlgButton {
         }
     }
     onClicked: {
+      //test
+      //alg.log.info(alg.texturesets.structure("1001"))
       try{
           if(alg.project.isOpen()){
               dliang_sp_tools.initParams()
@@ -262,6 +264,12 @@ AlgButton {
 
             // refresh port
             maya_port_TI.text = alg.settings.value('default_maya_port')
+
+            if (enable_connection_CB.checked != true){
+                for(var i=0; i < repeater_export_channel_list.count; i++){
+                    repeater_export_channel_list.itemAt(i).children[1].text = ""
+                }
+            }
         }
         function refreshInterface() {
           try {
@@ -873,6 +881,11 @@ AlgButton {
                             AlgTextInput{
                                 id: output_dir_TE
                                 Layout.fillWidth: true
+                                onEditingFinished:{
+                                    output_dir_TE.text = output_dir_TE.text.replace(/\\/g,"/")
+                                    output_path = output_dir_TE.text
+                                    alg.log.info(output_path)
+                                }
                             }
 
                             AlgToolButton {
