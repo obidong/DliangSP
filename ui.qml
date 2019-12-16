@@ -156,32 +156,56 @@ AlgButton {
 
     AlgDialog  {
         id: dialog_export_confirmation
-        minimumHeight: 200
+        minimumHeight: 300
         minimumWidth: 330
         defaultButtonText: "Export"
         visible: false
-        ColumnLayout{
+        Rectangle{
+            color:"transparent"
+            anchors.fill:parent
+            anchors.margins: 5
+            anchors.bottomMargin: 100
+            AlgScrollView {
+              id: scrollview_export_confirmation
+              anchors.fill: parent
+              ColumnLayout {
+                spacing: 6
+                Layout.maximumWidth: scrollview_export_confirmation.viewportWidth
+                Layout.minimumWidth: scrollview_export_confirmation.viewportWidth
+                AlgLabel{
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+                    Layout.margins: 15
+                    id:label_export_information
+                }
+
+
+                }
+            }
+        }
+
+        GridLayout{
+            anchors.fill: parent
+            anchors.margins: 5
+            anchors.bottomMargin: 40
             AlgLabel{
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
-                Layout.margins: 15
-                id:label_export_information
+               text:"Export Progress"
+               Layout.maximumWidth: 90
+               Layout.minimumHeight: 25
+               Layout.maximumHeight: 25
+               Layout.alignment: Qt.AlignHCenter|Qt.AlignBottom
             }
             AlgProgressBar {
                 id: progressbar_export
-                Layout.minimumWidth: 190
-                Layout.maximumWidth: 190
+                Layout.fillWidth: true
                 Layout.minimumHeight: 25
                 Layout.maximumHeight: 25
-                Layout.alignment: Qt.AlignHCenter|Qt.AlignTop
+                Layout.alignment: Qt.AlignHCenter|Qt.AlignBottom
                 from: 0
                 to: 1
                 value: 0.0
                 height: 25
-
             }
-
         }
-
         onAccepted:{
             dliang_sp_tools.exportTex()
         }
@@ -205,7 +229,7 @@ AlgButton {
             //test
             //alg.log.info(alg.texturesets.structure("1001").stacks[0].channels)
             //init UI
-            alg.log.info(alg.project.settings)
+            //alg.log.info(alg.project.settings)
             channel_list = []
             // gether project information
             project_name = alg.project.name()
@@ -432,7 +456,7 @@ AlgButton {
                     }
                 }
             }
-            alg.log.info(export_channel_info)
+            //alg.log.info(export_channel_info)
             export_info = export_channel_info
             dialog_export_confirmation.open()
 
@@ -442,6 +466,14 @@ AlgButton {
             if (output_res != ""){
                 map_info = {resolution:[output_res,output_res]}
             }
+
+            var channel_num = 0
+            for (var i in output_channels){
+                channel_num +=1
+            }
+
+            var textureset_num = output_textureset.length
+            var total_channel_num =  channel_num * textureset_num
 
             for (var i in output_textureset){
                 var textureset = output_textureset[i]
@@ -477,15 +509,18 @@ AlgButton {
                             alg.mapexport.saveConvertedMap(textureset,output_normal_format,output_path + "/"+ resolved_file_format +"." + output_format, map_info)
                         }else{
                             alg.mapexport.save([textureset, channel_identifier], output_path + "/"+ resolved_file_format +"." + output_format, map_info)
+                        }                        
+                        if (progressbar_export.value<0.995){
+                            progressbar_export.value += 1/total_channel_num
                         }
                         alg.log.info("Finish exporting "+ textureset +" "+channel_name)
                     }catch(err){
+                        if (progressbar_export.value<0.995){
+                            progressbar_export.value += 1/total_channel_num
+                        }
                         //alg.log.exception(err)
                      }
 
-                }
-                if (progressbar_export.value<0.975){
-                    progressbar_export.value += 1/output_textureset.length
                 }
             }
             dialog_export_confirmation.close()
@@ -514,10 +549,9 @@ AlgButton {
             var file_ext = export_format_CB.currentText
             var channel_info=(JSON.stringify(export_info))
             channel_info=dliang_sp_tools.replaceAll(channel_info,'"','\"')
-            alg.log.info(channel_info)
             alg.subprocess.check_output(["\""+alg.plugin_root_directory+"connect_maya.exe\"", port, materialName, channel_info, renderer])
             //for checking
-            alg.log.info("\"" + alg.plugin_root_directory + "connect_maya.exe\"" + " " + port + " " + materialName + " " + channel_info + " " + renderer)
+            //alg.log.info("\"" + alg.plugin_root_directory + "connect_maya.exe\"" + " " + port + " " + materialName + " " + channel_info + " " + renderer)
         }
 
         // Layout, where the nightmare starts...
@@ -884,7 +918,6 @@ AlgButton {
                                 onEditingFinished:{
                                     output_dir_TE.text = output_dir_TE.text.replace(/\\/g,"/")
                                     output_path = output_dir_TE.text
-                                    alg.log.info(output_path)
                                 }
                             }
 
@@ -967,7 +1000,7 @@ AlgButton {
                             id: layout_output_channel_list
                             Layout.columnSpan: 2
                             Layout.fillWidth: true
-                            Layout.minimumHeight: 110
+                            Layout.minimumHeight: 120
                             spacing:0
                             Rectangle {
                               Layout.columnSpan: 2

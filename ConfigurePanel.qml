@@ -13,7 +13,7 @@ AlgDialog {
   id: configureDialog
   visible: false
   title: "configure"
-  width: 500
+  width: 350
   height: 250
   minimumWidth: 300
   minimumHeight: 250
@@ -46,15 +46,11 @@ AlgDialog {
     "user5",
     "user6",
     "user7"  ]
-
   function reload() {
     content.reload()
   }
 
   onAccepted: {
-    if (path.text != "...") {
-            alg.settings.setValue("export_preset_path", path.text);
-		}
         alg.settings.setValue("default_maya_port", mayaPortTextInput.text);
 
         var renderer_index = rendererComboBox.currentIndex
@@ -77,7 +73,6 @@ AlgDialog {
     clip: true
 
     function reload() {
-      path.reload()
       mayaPortTextInput.reload()
       rendererComboBox.reload()
       formatComboBox.reload()
@@ -88,49 +83,9 @@ AlgDialog {
       anchors.fill: parent
 
       ColumnLayout {
-        spacing: 18
+        spacing: 6
         Layout.maximumWidth: scrollView.viewportWidth
         Layout.minimumWidth: scrollView.viewportWidth
-
-        ColumnLayout {
-          spacing: 6
-          Layout.fillWidth: true
-
-          AlgLabel {
-            text: "Path to export-presets folder"
-            Layout.fillWidth: true
-          }
-
-          RowLayout {
-            spacing: 6
-            Layout.fillWidth: true
-
-            AlgTextInput {
-              id: path
-              borderActivated: true
-              wrapMode: TextEdit.Wrap
-              readOnly: true
-              Layout.fillWidth: true
-
-              function reload() {
-                text = alg.settings.value("export_preset_path", "...")
-              }
-
-              Component.onCompleted: {
-                reload()
-              }
-            }
-
-            AlgButton {
-              id: searchPathButton
-              text: "Set path"
-              onClicked: {
-                // open the search path dialog
-                searchPathDialog.setVisible(true)
-              }
-            }
-          }
-        }
 
         RowLayout {
           spacing: 6
@@ -138,13 +93,14 @@ AlgDialog {
 
           AlgLabel {
             text: "Default Maya Port"
-            Layout.fillWidth: true
+            Layout.minimumWidth: 100
           }
 
           AlgTextInput{
               Layout.fillWidth: true
               id:mayaPortTextInput
               text:"9001"
+              Layout.alignment: Qt.AlignLeft
             function reload() {
               text = alg.settings.value("default_maya_port", "9001");
             }
@@ -161,17 +117,19 @@ AlgDialog {
 
           AlgLabel {
             text: "Default Renderer"
-            Layout.fillWidth: true
+            Layout.minimumWidth: 100
           }
 
           AlgComboBox {
             id: rendererComboBox
             Layout.minimumWidth: 150
+            Layout.alignment: Qt.AlignLeft
+            Layout.fillWidth: true
 
             model: ListModel {
               id: rendererModel
               ListElement { text: "Arnold" }
-              ListElement { text: "Vray" }
+              ListElement { text: "VRay" }
               ListElement { text: "Renderman_PxrDisney" }
               ListElement { text: "RedShift" }
             }
@@ -196,13 +154,15 @@ AlgDialog {
           Layout.fillWidth: true
 
           AlgLabel {
-            text: "Export format"
-            Layout.fillWidth: true
+            text: "Default Extension"
+            Layout.minimumWidth: 100
           }
 
           AlgComboBox {
             id: formatComboBox
             Layout.minimumWidth: 150
+            Layout.alignment: Qt.AlignLeft
+            Layout.fillWidth: true
 
             model: ListModel {
               id: formatModel
@@ -237,6 +197,26 @@ AlgDialog {
             Layout.minimumWidth: scrollView.width-15
             columnSpacing: 3
             rowSpacing: 3
+            RowLayout{
+                Layout.columnSpan: 3
+                AlgLabel{
+                    text:"Channels"
+                    font.weight: Font.Bold
+                    Layout.minimumWidth: 100
+                }
+                AlgLabel{text:"$channel"
+                Layout.minimumWidth: 200
+                Layout.fillWidth: true
+                font.weight: Font.Bold
+                }
+            }
+            Rectangle{
+                height:2
+                Layout.fillWidth: true
+                Layout.columnSpan: 3
+                radius:1
+                color:"#d6d6d6"
+            }
             Repeater{
                 id: channel_identifier_repeater
                 model: channel_identifier
@@ -247,29 +227,15 @@ AlgDialog {
                     AlgTextInput{
                         Layout.minimumWidth: 200
                         text:alg.settings.value(modelData)
+                        Layout.fillWidth: true
+                        tooltip:"$channel will be replaced by the this strings in file name when exporting the specified channel."
+
                     }
                 }
-
             }
           }
 
         }
-    }
-  }
-
-
-
-  FileDialog {
-    id: searchPathDialog
-    title: "Choose the export preset folder..."
-    selectFolder: true
-    onAccepted: {
-      path.text = alg.fileIO.urlToLocalFile(fileUrl.toString())
-    }
-    onVisibleChanged: {
-      if (!visible) {
-        configureDialog.requestActivate();
-      }
     }
   }
 }
