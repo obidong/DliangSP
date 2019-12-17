@@ -62,6 +62,7 @@ AlgDialog {
         for (var i in channel_identifier){
         alg.settings.setValue(channel_identifier[i], channel_identifier_repeater.itemAt(i).children[1].text)
         }
+        alg.settings.setValue("file_name_format", filenameTI.text)
   }
 
   Rectangle {
@@ -191,6 +192,32 @@ AlgDialog {
             }
           }
         }
+
+        RowLayout {
+          spacing: 6
+          Layout.fillWidth: true
+
+          AlgLabel {
+            text: "Default Tex Name"
+            Layout.minimumWidth: 100
+          }
+
+          AlgTextInput{
+            id: filenameTI
+            text:"$mesh_$channel.$textureSet"
+            tooltip: "Texture naming convention. Available tokens:$mesh, $project, $channel, $textureSet"
+            Layout.minimumWidth: 150
+            Layout.alignment: Qt.AlignLeft
+            Layout.fillWidth: true
+            function reload() {
+              text = alg.settings.value("file_name_format")
+            }
+            Component.onCompleted: {
+              reload()
+            }
+          }
+        }
+
 
         GridLayout{
             columns: 3
