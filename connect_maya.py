@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# this file has been converted to connect_maya.exe and no longed needed. 
 import socket,sys,json
 
 def create_shading_network():
