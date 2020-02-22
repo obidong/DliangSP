@@ -403,8 +403,10 @@ AlgButton {
                                                                         // output depth
             if(bit_depth_CB.currentText == "8 bit"){
                 output_depth = 8
-            }else{
+            }elif(bit_depth_CB.currentText == "16 bit"){
                 output_depth = 16
+            } else {
+                output_depth =32
             }
             port = maya_port_TI.text
 
@@ -444,6 +446,13 @@ AlgButton {
                         channel_identifier = repeater_export_channel_list.itemAt(i).children[0].text
                         var maya_params = repeater_export_channel_list.itemAt(i).children[1].text
                         export_channel_info[channel_identifier] = [output_full_path[channel_identifier],maya_params]
+                    }
+                }
+            } else{
+                for(var i=0; i < repeater_export_channel_list.count; i++){
+                    if (repeater_export_channel_list.itemAt(i).children[0].checked){
+                        channel_identifier = repeater_export_channel_list.itemAt(i).children[0].text
+                        export_channel_info[channel_identifier] = [output_full_path[channel_identifier], ""]
                     }
                 }
             }
@@ -883,6 +892,7 @@ AlgButton {
                                 id: bit_depth_LE
                                 ListElement { text: "8 bit" }
                                 ListElement { text: "16 bit" }
+                                ListElement { text: "32 bit" }
                             }
                           }
                         RowLayout{
