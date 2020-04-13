@@ -137,16 +137,16 @@ AlgButton {
         }
     }
     onClicked: {
-      try{
           if(alg.project.isOpen()){
               dliang_sp_tools.initParams()
           }
-          dliang_sp_tools.visible = true
+          dliang_sp_tools.open()
+          alg.log.info("set tool visible")
+
           dliang_sp_tools.refreshInterface()
+          alg.log.info("refresh ui")
           texture_set_list = dliang_sp_tools.getTextureSetInfo()
-      }catch(err){
-          alg.log.exception(err)
-      }
+          alg.log.info(texture_set_list)
   }
 
     AlgDialog  {
@@ -154,7 +154,7 @@ AlgButton {
         minimumHeight: 300
         minimumWidth: 330
         defaultButtonText: "Export"
-        visible: false
+        //visible: false
         Rectangle{
             color:"transparent"
             anchors.fill:parent
@@ -219,6 +219,7 @@ AlgButton {
 
         // basic functions
         function initParams(){
+            alg.log.info("start tool")
             channel_list = []
             // gether project information
             project_name = alg.project.name()
@@ -904,6 +905,7 @@ AlgButton {
                             AlgToolButton {
                                 id: output_folder_btn
                                 iconName:"icons/open_folder.png"
+                                //Layout.alignment: Qt.AlignRight
                                 anchors.right: parent.right
                                 onClicked:{
                                     if(alg.project.isOpen()){
@@ -980,8 +982,9 @@ AlgButton {
                             spacing:0
                             Rectangle {
                               Layout.columnSpan: 2
+                              //Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
                               anchors.fill: parent
-                              anchors.margins: 1
+                              //anchors.margins: 1
                               Layout.fillWidth: true
                               color: "transparent"
                               AlgScrollView {
